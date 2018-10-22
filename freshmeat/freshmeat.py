@@ -30,9 +30,9 @@ class Freshmeat(BaseCog):
         member_list = []
         for member in ctx.guild.members:
             if member.joined_at > ctx.message.created_at - datetime.timedelta(hours=hours):
-                member_list.append(member)
+                member_list.append([member.name, member.id, member.joined_at])
 
-        member_list = list(reversed(member_list))
+        member_list.sort(key=lambda member: member[2], reverse=True)
         member_string = ""
         for member in member_list:
             member_string += f"\n{member.name} ({member.id})"
