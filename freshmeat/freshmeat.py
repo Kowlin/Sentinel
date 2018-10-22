@@ -7,8 +7,10 @@ from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 import datetime
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Freshmeat:
+
+class Freshmeat(BaseCog):
 
     def __init__(self, bot):
         self.bot = bot
@@ -40,7 +42,7 @@ class Freshmeat:
             embed = discord.Embed(description=page)
             embed.set_author(
                 name=f"{ctx.author.display_name}'s freshmeat of the day.",
-                icon_url=ctx.author.avatar_as_url(format="png")
+                icon_url=ctx.author.avatar_url_as(format="png")
             )
             pages.append(embed)
 
