@@ -35,7 +35,7 @@ class Freshmeat(BaseCog):
         member_list.sort(key=lambda member: member[2], reverse=True)
         member_string = ""
         for member in member_list:
-            member_string += f"\n{member.name} ({member.id})"
+            member_string += f"\n{member[0]} ({member[1]})"
 
         pages = []
         for page in pagify(escape(member_string, formatting=True), page_length=1000):
