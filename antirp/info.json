@@ -1,0 +1,10 @@
+{
+    "author": [
+      "Kowlin"
+    ],
+    "description": "Block any type of rich presence invites",
+    "short": "Block any type of rich presence invites",
+    "tags": ["Moderation", "Rich Presence"],
+    "type": "COG",
+    "install_msg": "Thanks for installing AntiRP, Don't forget that ``[P]help AntiRP`` is your friend!"
+  }
