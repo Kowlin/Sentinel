@@ -106,7 +106,7 @@ class AntiRP(BaseCog):
 
         if message.activity is None or toggle_config is False:
             return
-        if self.bot.is_automod_immune(message.author) is True:
+        if await self.bot.is_automod_immune(message.author) is True:
             return  # End it because we're dealing with a mod.
 
         if message.channel.permissions_for(message.author).embed_links is False:
