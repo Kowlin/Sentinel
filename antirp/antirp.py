@@ -104,7 +104,7 @@ class AntiRP(BaseCog):
         toggle_config = await guild_config.toggle()
         whitelist_config = await guild_config.whitelist()
 
-        if message.activity is None or toggle_config is False:
+        if message.guild is None or message.activity is None or toggle_config is False:
             return
         if await self.bot.is_automod_immune(message.author) is True:
             return  # End it because we're dealing with a mod.
