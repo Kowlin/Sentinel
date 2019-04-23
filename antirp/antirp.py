@@ -100,11 +100,14 @@ class AntiRP(BaseCog):
             await ctx.send("No applications are whitelisted.")
 
     async def on_message(self, message):
+        if message.guild is None:
+            return
+
         guild_config = self.config.guild(message.guild)
         toggle_config = await guild_config.toggle()
         whitelist_config = await guild_config.whitelist()
 
-        if message.guild is None or message.activity is None or toggle_config is False:
+        if message.activity is None or toggle_config is False:
             return
         if await self.bot.is_automod_immune(message.author) is True:
             return  # End it because we're dealing with a mod.
