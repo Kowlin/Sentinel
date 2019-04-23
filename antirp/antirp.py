@@ -100,7 +100,7 @@ class AntiRP(BaseCog):
             await ctx.send("No applications are whitelisted.")
 
     async def on_message(self, message):
-        if message.guild is None:
+        if isinstance(message.channel, discord.DMChannel):
             return
 
         guild_config = self.config.guild(message.guild)
