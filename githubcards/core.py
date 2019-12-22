@@ -130,7 +130,7 @@ class GitHubCards(commands.Cog):
         await self.rebuild_cache_for_guild(ctx.guild.id)
 
         # if that prefix doesn't exist, it will still send same message but I don't care
-        await ctx.send("A repository with the prefix ``{prefix}`` removed.")
+        await ctx.send(f"A repository with the prefix ``{prefix}`` removed.")
 
     @ghc_group.command(name="list")
     async def list_prefixes(self, ctx):
