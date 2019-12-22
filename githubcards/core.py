@@ -65,7 +65,10 @@ class GitHubCards(commands.Cog):
 
             for guild_id, guild_data in data.items():
                 partial = "|".join(re.escape(prefix) for prefix in guild_data.keys())
-                pattern = re.compile(rf"(?:\s|^)({partial})#([0-9]+)(?:[\s,.]|$)", re.I)
+                pattern = re.compile(
+                    rf"(?:\s|^)({partial})#([0-9]+)(?:[\s,.]|$)",
+                    re.IGNORECASE | re.MULTILINE,
+                )
                 self.active_prefix_matcherers[int(guild_id)] = {"pattern": pattern, "data": guild_data}
         finally:
             self._ready.set()
