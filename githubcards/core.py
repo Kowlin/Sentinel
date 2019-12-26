@@ -53,6 +53,7 @@ class GitHubCards(commands.Cog):
     async def get_ready(self):
         """ cache preloading """
         await self.rebuild_cache_for_guild()
+        await self._set_token()
         self._ready.set()
 
     async def rebuild_cache_for_guild(self, *guild_ids):
@@ -77,7 +78,10 @@ class GitHubCards(commands.Cog):
         await self._ready.wait()
 
     def cog_unload(self):
-        self.http.session.detach()
+        try:
+            self.http.session.detach()
+        except AttributeError:
+            pass
 
     async def _set_token(self) -> bool:
         """Get the token and prepare the header"""
@@ -236,6 +240,9 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
         await self._ready.wait()
+        if not self.http:
+            if not await self._set_token():
+                return
         if message.author.bot:
             return
         guild = message.guild
