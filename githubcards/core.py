@@ -41,6 +41,7 @@ class GitHubCards(commands.Cog):
             repo=None,
         )
         self.active_prefix_matcherers = {}
+        self.splitter = re.compile(r"[.,\s]")
         self._ready = asyncio.Event()
         self._startup_task = asyncio.create_task(self.get_ready())
 
@@ -66,10 +67,7 @@ class GitHubCards(commands.Cog):
 
             for guild_id, guild_data in data.items():
                 partial = "|".join(re.escape(prefix) for prefix in guild_data.keys())
-                pattern = re.compile(
-                    rf"(?:\s|^)({partial})#([0-9]+)(?:[\s,.]|$)",
-                    re.IGNORECASE | re.MULTILINE,
-                )
+                pattern = re.compile(rf"^({partial})#([0-9]+)$", re.IGNORECASE)
                 self.active_prefix_matcherers[int(guild_id)] = {"pattern": pattern, "data": guild_data}
         finally:
             self._ready.set()
@@ -255,7 +253,10 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         if not cache:
             return
 
-        for match in cache["pattern"].finditer(message.content):
+        for item in self.splitter.split(message.content):
+            match = cache["pattern"].match(item)
+            if match is None:
+                continue
             prefix = match.group(1)
             number = int(match.group(2))
             # hey, you're the one who wanted to add search queries
