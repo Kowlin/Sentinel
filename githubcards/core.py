@@ -41,7 +41,7 @@ class GitHubCards(commands.Cog):
             repo=None,
         )
         self.active_prefix_matcherers = {}
-        self.splitter = re.compile(r"[.,\s]")
+        self.splitter = re.compile(r"[!?().,;:+|&/`\s]")
         self._ready = asyncio.Event()
         self._startup_task = asyncio.create_task(self.get_ready())
 
