@@ -96,7 +96,7 @@ class GitHubCards(commands.Cog):
 
     # Command groups
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_guild=True)
+    @checks.mod_or_permissions(manage_guild=True)
     @commands.group(aliases=["ghc"], name="githubcards")
     async def ghc_group(self, ctx):
         pass
@@ -246,8 +246,9 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         guild = message.guild
         if guild is None:
             return  # End the function here if its anything but a guild.
-        if not await self.version_safe_allowed(message.author):
-            return  # There, version safe allowed func in.
+        #  if not await self.version_safe_allowed(message.author):
+        #       return  # There, version safe allowed func in.
+        # TODO To be fixed at an later date. We can go without blacklisting for now.
 
         cache = self.active_prefix_matcherers.get(guild.id, None)
         if not cache:
