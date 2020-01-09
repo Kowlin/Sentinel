@@ -1,17 +1,14 @@
 import discord
-import aiohttp
 import asyncio
 import logging
 import re
 
-from dataclasses import dataclass
-from typing import Optional, Union
 from redbot import VersionInfo, version_info as red_version
 from redbot.core import checks, commands, Config
 
-from .calls import Queries, Mutations
+from .converters import RepoData
 from .data import SearchData, IssueData
-from .exceptions import ApiError, RepoNotFound
+from .exceptions import ApiError
 from .http import GitHubAPI
 
 log = logging.getLogger("red.githubcards.core")
@@ -40,7 +37,7 @@ class GitHubCards(commands.Cog):
             owner=None,
             repo=None,
         )
-        self.active_prefix_matcherers = {}
+        self.active_prefix_matchers = {}
         self.splitter = re.compile(r"[!?().,;:+|&/`\s]")
         self._ready = asyncio.Event()
         self._startup_task = asyncio.create_task(self.get_ready())
@@ -68,7 +65,7 @@ class GitHubCards(commands.Cog):
             for guild_id, guild_data in data.items():
                 partial = "|".join(re.escape(prefix) for prefix in guild_data.keys())
                 pattern = re.compile(rf"^({partial})#([0-9]+)$", re.IGNORECASE)
-                self.active_prefix_matcherers[int(guild_id)] = {"pattern": pattern, "data": guild_data}
+                self.active_prefix_matchers[int(guild_id)] = {"pattern": pattern, "data": guild_data}
         finally:
             self._ready.set()
 
@@ -94,12 +91,22 @@ class GitHubCards(commands.Cog):
         self.http = GitHubAPI(token=github_keys["token"])
         return True
 
+    @commands.guild_only()
+    @commands.command(usage="<prefix> <search_query>")
+    async def ghsearch(self, ctx, repo_data: RepoData, *, search_query: str):
+        """Search for issues in GitHub repo."""
+        search_data = await self.http.search_issues(
+            repo_data["owner"], repo_data["repo"], search_query
+        )
+        embed = self.format_search(search_data)
+        await ctx.send(embed=embed)
+
     # Command groups
     @commands.guild_only()
     @checks.mod_or_permissions(manage_guild=True)
     @commands.group(aliases=["ghc"], name="githubcards")
     async def ghc_group(self, ctx):
-        pass
+        """GitHubCards settings."""
 
     @ghc_group.command(name="add")
     async def add(self, ctx, prefix: str, github_slug: str):
@@ -172,11 +179,17 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         """Format the search results into an embed"""
         embed = discord.Embed()
         embed_body = ""
-        for entry in search_data.results:
+        if not search_data.results:
+            embed.description = "Nothing found."
+            return embed
+        for entry in search_data.results[:10]:
             embed_body += f"[[{entry['number']}]({entry['url']})] {entry['title']}\n"
-        if search_data.total > 15:
-            embed.set_footer(text=f"Showing the first 15 results, {search_data.total} results in total.")
-            embed_body += f"\n\n[Click here for all the results](https://github.com/search?type=Issues&q={search_data.query})"
+        if search_data.total > 10:
+            embed.set_footer(text=f"Showing the first 10 results, {search_data.total} results in total.")
+            embed_body += (
+                "\n\n[Click here for all the results]"
+                f"(https://github.com/search?type=Issues&q={search_data.escaped_query})"
+            )
         embed.description = embed_body
         return embed
 
@@ -250,7 +263,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         #       return  # There, version safe allowed func in.
         # TODO To be fixed at an later date. We can go without blacklisting for now.
 
-        cache = self.active_prefix_matcherers.get(guild.id, None)
+        cache = self.active_prefix_matchers.get(guild.id, None)
         if not cache:
             return
 

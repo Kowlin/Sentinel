@@ -1,9 +1,7 @@
-from typing import Optional
-
-import discord
-
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
+from urllib.parse import quote_plus
 
 
 @dataclass(init=True)
@@ -13,6 +11,11 @@ class SearchData(object):
     ratelimit_cost: int
     total: int  # data/search/issueCount
     results: list  # data/search/nodes
+    query: str
+
+    @property
+    def escaped_query(self):
+        return quote_plus(self.query)
 
 
 @dataclass(init=True)

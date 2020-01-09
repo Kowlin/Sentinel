@@ -1,9 +1,9 @@
-import aiohttp
 import logging
-
 from datetime import datetime
 
-from .calls import Queries, Mutations
+import aiohttp
+
+from .calls import Queries
 from .data import SearchData, IssueData
 from .exceptions import ApiError
 
@@ -86,8 +86,8 @@ class GitHubAPI:
             )
             return data
 
-    async def search_issues(self, repo: str, searchParam: str):
-        query = f"repo:{repo} {searchParam}"
+    async def search_issues(self, repoOwner: str, repoName: str, searchParam: str):
+        query = f"repo:{repoOwner}/{repoName} {searchParam}"
         async with self.session.post(
             baseUrl,
             json={
@@ -96,7 +96,7 @@ class GitHubAPI:
             }
         ) as call:
             json = await call.json()
-            if "errors" in json.keys().keys():
+            if "errors" in json.keys():
                 raise ApiError(json['errors'])
             ratelimit = json['data']['rateLimit']
             search_results = json['data']['search']
