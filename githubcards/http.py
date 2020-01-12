@@ -12,7 +12,15 @@ log = logging.getLogger("red.githubcards.http")
 
 
 class GitHubAPI:
-    def __init__(self, token: str = None):
+    def __init__(self, token: str) -> None:
+        self.session: aiohttp.ClientSession
+        self._create_session(token)
+
+    async def recreate_session(self, token: str) -> None:
+        await self.session.close()
+        self._create_session(token)
+
+    def _create_session(self, token: str) -> None:
         headers = {
             "Authorization": f"bearer {token}",
             "Content-Type": "application/json",
