@@ -4,3 +4,7 @@ class RepoNotFound(Exception):
 
 class ApiError(Exception):
     pass
+
+
+class Unauthorized(ApiError):
+    pass

@@ -9,7 +9,7 @@ from redbot.core import checks, commands, Config
 
 from .converters import RepoData
 from .data import SearchData, IssueData
-from .exceptions import ApiError
+from .exceptions import ApiError, Unauthorized
 from .http import GitHubAPI
 
 log = logging.getLogger("red.githubcards.core")
@@ -227,9 +227,8 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
         await self._ready.wait()
-        if not self.http:
-            if not await self._set_token():
-                return
+        if not self.http._token:
+            return
         if message.author.bot:
             return
         guild = message.guild
@@ -255,6 +254,9 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             owner, repo = prefix_data['owner'], prefix_data['repo']
             try:
                 issue_data = await self.http.find_issue(owner, repo, number)
+            except Unauthorized:
+                log.error("Set GitHub token is invalid.")
+                return
             except ApiError as e:
                 # possibly log
                 if e.args[0][0]["type"] == "NOT_FOUND":
