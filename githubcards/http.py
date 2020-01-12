@@ -5,7 +5,7 @@ import aiohttp
 
 from .calls import Queries
 from .data import SearchData, IssueData
-from .exceptions import ApiError
+from .exceptions import ApiError, Unauthorized
 
 baseUrl = "https://api.github.com/graphql"
 log = logging.getLogger("red.githubcards.http")
@@ -14,6 +14,7 @@ log = logging.getLogger("red.githubcards.http")
 class GitHubAPI:
     def __init__(self, token: str) -> None:
         self.session: aiohttp.ClientSession
+        self._token: str
         self._create_session(token)
 
     async def recreate_session(self, token: str) -> None:
@@ -26,11 +27,14 @@ class GitHubAPI:
             "Content-Type": "application/json",
             "Accept": "application/vnd.github.shadow-cat-preview+json",
         }
+        self._token = token
         self.session = aiohttp.ClientSession(headers=headers)
 
     async def validate_user(self):
         async with self.session.post(baseUrl, json={"query": Queries.validateUser}) as call:
             json = await call.json()
+            if call.status == 401:
+                raise Unauthorized(json["message"])
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
             ratelimit = json['data']['rateLimit']
@@ -46,6 +50,8 @@ class GitHubAPI:
             },
         ) as call:
             json = await call.json()
+            if call.status == 401:
+                raise Unauthorized(json["message"])
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
             ratelimit = json['data']['rateLimit']
@@ -61,6 +67,8 @@ class GitHubAPI:
             },
         ) as call:
             json = await call.json()
+            if call.status == 401:
+                raise Unauthorized(json["message"])
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
             ratelimit = json['data']['rateLimit']
