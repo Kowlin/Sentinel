@@ -192,7 +192,28 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             embed.description = "Nothing found."
             return embed
         for entry in search_data.results[:10]:
-            embed_body += f"[[{entry['number']}]({entry['url']})] {entry['title']}\n"
+            if entry["state"] == "OPEN":
+                state = "\N{LARGE GREEN CIRCLE}"
+            elif entry["state"] == "CLOSED":
+                state = "\N{LARGE RED CIRCLE}"
+            else:
+                state = "\N{LARGE PURPLE CIRCLE}"
+
+            issue_type = (
+                "Issue"
+                if entry["__typename"] == "Issue"
+                else "Pull Request"
+            )
+            mergeable_state = entry.get("mergeable", None)
+            if entry["state"] == "OPEN":
+                if mergeable_state == "CONFLICTING":
+                    state = "\N{WARNING SIGN}\N{VARIATION SELECTOR-16}"
+                elif mergeable_state == "UNKNOWN":
+                    state = "\N{WHITE QUESTION MARK ORNAMENT}"
+            embed_body += (
+                f"{state} - **{issue_type}** - **[#{entry['number']}]({entry['url']})**\n"
+                f"{entry['title']}\n"
+            )
         if search_data.total > 10:
             embed.set_footer(text=f"Showing the first 10 results, {search_data.total} results in total.")
             embed_body += (
