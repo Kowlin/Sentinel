@@ -1,0 +1,22 @@
+{
+    "name": "GitHubCards",
+    "short": "Embed GitHub issues on your discord chat.",
+    "description": "Ever wanted to embed a github issue?! Well **now** you can! With GitHubCards, this sweet cog allows you to embed any issue from any public repo you like by using a unique prefix!\n*Warning: GithubCards will blow your mind!*",
+    "install_msg": "Thanks for installing GithubCards\n\nBefore you'll be able to use this cog, you need to configure a GitHub token, see `[p]ghc instructions` for instructions.\nFor support go to: <https://support.kowlin.xyz>\n\nIf you like my work and want to support me, please consider becoming a Patron over at <https://patreon.com/kowlin>",
+    "author": [
+        "Kowlin (Kowlin#2536)",
+        "jack1142 (Jackenmen#6607)",
+        "mikeshardmind (Sinbad#1871)"
+    ],
+    "required_cogs": {},
+    "requirements": [],
+    "tags": [
+        "api",
+        "github",
+        "utility"
+    ],
+    "min_bot_version": "3.2.0",
+    "hidden": false,
+    "disabled": false,
+    "type": "COG"
+}

@@ -2,13 +2,14 @@ import discord
 import asyncio
 import logging
 import re
+from typing import Mapping, Optional
 
 from redbot import VersionInfo, version_info as red_version
 from redbot.core import checks, commands, Config
 
 from .converters import RepoData
 from .data import SearchData, IssueData
-from .exceptions import ApiError
+from .exceptions import ApiError, Unauthorized
 from .http import GitHubAPI
 
 log = logging.getLogger("red.githubcards.core")
@@ -40,7 +41,7 @@ class GitHubCards(commands.Cog):
         self.active_prefix_matchers = {}
         self.splitter = re.compile(r"[!?().,;:+|&/`\s]")
         self._ready = asyncio.Event()
-        self._startup_task = asyncio.create_task(self.get_ready())
+        self.http: GitHubAPI = None  # assigned in initialize()
 
         self.stateColours = {  # Can't be bothered to do this properly ATM
             'OPEN': 0x6cc644,
@@ -48,10 +49,10 @@ class GitHubCards(commands.Cog):
             'MERGED': 0x6e5494
         }
 
-    async def get_ready(self):
+    async def initialize(self):
         """ cache preloading """
         await self.rebuild_cache_for_guild()
-        await self._set_token()
+        await self._create_client()
         self._ready.set()
 
     async def rebuild_cache_for_guild(self, *guild_ids):
@@ -73,23 +74,31 @@ class GitHubCards(commands.Cog):
         await self._ready.wait()
 
     def cog_unload(self):
-        try:
-            self.http.session.detach()
-        except AttributeError:
-            pass
+        self.bot.loop.create_task(self.http.session.close())
 
-    async def _set_token(self) -> bool:
-        """Get the token and prepare the header"""
-        try:  # Legacy edition
-            github_keys = await self.bot.db.api_tokens.get_raw("github", default={"token": None})
-        except AttributeError:
-            github_keys = await self.bot.get_shared_api_tokens("github")
+    async def _get_token(self, api_tokens: Optional[Mapping[str, str]] = None) -> str:
+        """Get GitHub token."""
+        if api_tokens is None:
+            api_tokens = await self.bot.get_shared_api_tokens("github")
 
-        if github_keys.get("token") is None:
+        token = api_tokens.get("token", "")
+        if not token:
             log.error("No valid token found")
-            return False
-        self.http = GitHubAPI(token=github_keys["token"])
-        return True
+        return token
+
+    async def _create_client(self) -> None:
+        """Create GitHub API client."""
+        self.http = GitHubAPI(token=await self._get_token())
+
+    @commands.Cog.listener()
+    async def on_red_api_tokens_update(
+        self, service_name: str, api_tokens: Mapping[str, str]
+    ):
+        """Update GitHub token when `[p]set api` command is used."""
+        if service_name != "github":
+            return
+
+        await self.http.recreate_session(await self._get_token(api_tokens))
 
     @commands.guild_only()
     @commands.command(usage="<prefix> <search_query>")
@@ -215,53 +224,18 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             embed.add_field(name="Milestone", value=issue_data.milestone)
         return embed
 
-    async def version_safe_allowed(self, who: discord.Member):
-        if red_version >= VersionInfo.from_str("3.2.0"):
-            return await self.bot.allowed_by_whitelist_blacklist(who)
-        else:
-
-            guild = who.guild
-
-            if await self.bot.is_owner(who):
-                return True
-
-            global_whitelist = await self.bot.db.whitelist()
-            if global_whitelist:
-                if who.id not in global_whitelist:
-                    return False
-            else:
-                # blacklist is only used when whitelist doesn't exist.
-                global_blacklist = await self.bot.db.blacklist()
-                if who.id in global_blacklist:
-                    return False
-
-            ids = {i for i in (who.id, *(who._roles)) if i != guild.id}
-
-            guild_whitelist = await self.bot.db.guild(guild).whitelist()
-            if guild_whitelist:
-                if ids.isdisjoint(guild_whitelist):
-                    return False
-            else:
-                guild_blacklist = await self.bot.db.guild(guild).blacklist()
-                if not ids.isdisjoint(guild_blacklist):
-                    return False
-
-            return True
-
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
         await self._ready.wait()
-        if not self.http:
-            if not await self._set_token():
-                return
+        if not self.http._token:
+            return
         if message.author.bot:
             return
         guild = message.guild
         if guild is None:
             return  # End the function here if its anything but a guild.
-        #  if not await self.version_safe_allowed(message.author):
-        #       return  # There, version safe allowed func in.
-        # TODO To be fixed at an later date. We can go without blacklisting for now.
+        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+            return
 
         cache = self.active_prefix_matchers.get(guild.id, None)
         if not cache:
@@ -280,6 +254,9 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             owner, repo = prefix_data['owner'], prefix_data['repo']
             try:
                 issue_data = await self.http.find_issue(owner, repo, number)
+            except Unauthorized:
+                log.error("Set GitHub token is invalid.")
+                return
             except ApiError as e:
                 # possibly log
                 if e.args[0][0]["type"] == "NOT_FOUND":
