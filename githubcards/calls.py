@@ -85,11 +85,14 @@ class Queries:
                 nodes {
                     __typename
                     ... on Issue {
+                        state
                         number
                         title
                         url
                 }
                 ... on PullRequest {
+                        mergeable
+                        state
                         number
                         title
                         url
