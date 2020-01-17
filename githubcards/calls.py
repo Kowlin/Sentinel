@@ -44,6 +44,7 @@ class Queries:
                         createdAt
                         state
                         mergeable
+                        isDraft
                         milestone {
                             title
                         }
@@ -92,6 +93,7 @@ class Queries:
                 }
                 ... on PullRequest {
                         mergeable
+                        isDraft
                         state
                         number
                         title

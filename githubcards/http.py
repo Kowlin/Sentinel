@@ -75,8 +75,8 @@ class GitHubAPI:
             issue = json['data']['repository']['issueOrPullRequest']
             log.debug(f"find_issue; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
 
-            # issue can have milestone, problem is that API returns None and I'm dumb
             mergeable_state = issue.get("mergeable", None)
+            is_draft = issue.get("isDraft", None)
             milestone = issue["milestone"]
             if milestone is not None:
                 milestone_title = milestone["title"]
@@ -96,6 +96,7 @@ class GitHubAPI:
                 body_text=issue['bodyText'],
                 url=issue['url'],
                 state=issue['state'],
+                is_draft=is_draft,
                 mergeable_state=mergeable_state,
                 milestone=milestone_title,
                 created_at=datetime.strptime(issue['createdAt'], '%Y-%m-%dT%H:%M:%SZ')
