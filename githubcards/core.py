@@ -97,7 +97,6 @@ class GitHubCards(commands.Cog):
         """Update GitHub token when `[p]set api` command is used."""
         if service_name != "github":
             return
-
         await self.http.recreate_session(await self._get_token(api_tokens))
 
     @commands.guild_only()
@@ -205,8 +204,11 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                 else "Pull Request"
             )
             mergeable_state = entry.get("mergeable", None)
+            is_draft = entry.get("isDraft", None)
             if entry["state"] == "OPEN":
-                if mergeable_state == "CONFLICTING":
+                if is_draft is True:
+                    state = "\N{PENCIL}\N{VARIATION SELECTOR-16}"
+                elif mergeable_state == "CONFLICTING":
                     state = "\N{WARNING SIGN}\N{VARIATION SELECTOR-16}"
                 elif mergeable_state == "UNKNOWN":
                     state = "\N{WHITE QUESTION MARK ORNAMENT}"
@@ -240,7 +242,10 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         # let's ignore this for now, since we want this to be compact, *fun*
         # embed.add_field(name=f"Labels [{len(issue_data.labels)}]", value=", ".join(issue_data.labels))
         if issue_data.mergeable_state is not None and issue_data.state == "OPEN":
-            embed.add_field(name="Merge Status", value=issue_data.mergeable_state.capitalize())
+            mergable_state = issue_data.mergeable_state.capitalize()
+            if issue_data.is_draft is True:
+                mergable_state = "Drafted"
+            embed.add_field(name="Merge Status", value=mergable_state)
         if issue_data.milestone:
             embed.add_field(name="Milestone", value=issue_data.milestone)
         return embed

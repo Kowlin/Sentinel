@@ -33,6 +33,7 @@ class IssueData(object):
     body_text: str
     state: str
     created_at: datetime
+    is_draft: Optional[bool] = None
     mergeable_state: Optional[str] = None
     milestone: Optional[str] = None
 
@@ -42,4 +43,3 @@ class IssueStatecolour(object):
     OPEN: 0x6cc644
     CLOSED: 0xbd2c00
     MERGED: 0x6e5494
-
