@@ -126,7 +126,13 @@ class GitHubCards(commands.Cog):
         try:
             owner, repo = github_slug.split("/")
         except ValueError:
-            await ctx.send('Invalid format. Please use Username/Repository')
+            await ctx.send('Invalid format. Please use ``Username/Repository``.')
+            return
+
+        try:
+            await self.http.validate_repo(owner, repo)
+        except ApiError:
+            await ctx.send('The provided GitHub repository doesn\'t exist, or is unable to be accessed due to permissions.')
             return
 
         async with self.config.custom("REPO", ctx.guild.id).all() as repos:
@@ -137,7 +143,7 @@ class GitHubCards(commands.Cog):
             repos[prefix] = {"owner": owner, "repo": repo}
 
         await self.rebuild_cache_for_guild(ctx.guild.id)
-        await ctx.send(f"A GitHub repository ``{github_slug}`` added with a prefix ``{prefix}``")
+        await ctx.send(f"A GitHub repository (``{github_slug}``) added with a prefix ``{prefix}``")
 
     @ghc_group.command(name="remove", aliases=["delete"])
     async def remove(self, ctx, prefix: str):
@@ -147,7 +153,7 @@ class GitHubCards(commands.Cog):
         await self.rebuild_cache_for_guild(ctx.guild.id)
 
         # if that prefix doesn't exist, it will still send same message but I don't care
-        await ctx.send(f"A repository with the prefix ``{prefix}`` removed.")
+        await ctx.send(f"A repository with the prefix ``{prefix}`` has been removed.")
 
     @ghc_group.command(name="list")
     async def list_prefixes(self, ctx):
@@ -155,10 +161,8 @@ class GitHubCards(commands.Cog):
         """
         repos = await self.config.custom("REPO", ctx.guild.id).all()
         if not repos:
-            await ctx.send("There are no configured prefixes on this server.")
+            await ctx.send("There are no configured GitHub repositories on this server.")
             return
-        # not the most readable code I wrote :P
-        # You don't say ~ Kowlin
         msg = "\n".join(
             f"``{prefix}``: ``{repo['owner']}/{repo['repo']}``" for prefix, repo in repos.items()
         )
