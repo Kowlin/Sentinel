@@ -93,7 +93,7 @@ class GitHubAPI:
                 issue_type=issue['__typename'],
                 number=issue['number'],
                 title=issue['title'],
-                body_text=issue['bodyText'],
+                body_text=issue['body'],
                 url=issue['url'],
                 state=issue['state'],
                 is_draft=is_draft,
