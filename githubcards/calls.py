@@ -39,7 +39,7 @@ class Queries:
                     ... on PullRequest {
                        number
                         title
-                        bodyText
+                        body
                         url
                         createdAt
                         state
@@ -57,7 +57,7 @@ class Queries:
                     ... on Issue {
                         number
                         title
-                        bodyText
+                        body
                         url
                         createdAt
                         state
