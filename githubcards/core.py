@@ -271,12 +271,18 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         if not cache:
             return
 
+        issue_numbers = set()
+
         for item in self.splitter.split(message.content):
             match = cache["pattern"].match(item)
             if match is None:
                 continue
             prefix = match.group(1)
             number = int(match.group(2))
+            # no need to post card for same issue number in one message twice
+            if number in issue_numbers:
+                continue
+            issue_numbers.add(number)
             # hey, you're the one who wanted to add search queries
             # now we have to figure out regex for that :aha:
             # or write a DSL parser (simple™)
