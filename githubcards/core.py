@@ -272,6 +272,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             return
 
         issue_numbers = set()
+        issue_data_list = []
 
         for item in self.splitter.split(message.content):
             match = cache["pattern"].match(item)
@@ -297,8 +298,29 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                 # possibly log
                 if e.args[0][0]["type"] == "NOT_FOUND":
                     log.debug(f"Issue with number {number} on repo {owner}/{repo} couldn't be found")
-                    return
+                    continue  # Do not return here as there may be more then one issue
                 else:
                     raise
-            embed = self.format_issue(issue_data)
+            issue_data_list.append(issue_data)
+
+        if len(issue_data_list) == 0:
+            # Fetching of all issues has failed somehow. So end it here.
+            return
+
+        issue_embeds = []
+        overflow = []
+
+        for index, issue in enumerate(issue_data_list):
+            if index < 2:
+                e = self.format_issue(issue)
+                issue_embeds.append(e)
+                continue
+            else:
+                overflow.append(f"[#{issue.number}]({issue.url})")
+
+        for embed in issue_embeds:
+            await message.channel.send(embed=embed)
+        if len(overflow) != 0:
+            embed = discord.Embed()
+            embed.description = " • ".join(overflow)
             await message.channel.send(embed=embed)

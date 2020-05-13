@@ -83,6 +83,13 @@ class GitHubAPI:
             else:
                 milestone_title = None
 
+            if issue['author'] is None:
+                issue['author'] = {
+                    "login": "Ghost",
+                    "url": "https://github.com/ghost",
+                    "avatarUrl": "https://avatars2.githubusercontent.com/u/10137?u=b1951d34a583cf12ec0d3b0781ba19be97726318&v=4"
+                }
+
             data = IssueData(
                 ratelimit_remaining=ratelimit['remaining'],
                 ratelimit_limit=ratelimit['limit'],
