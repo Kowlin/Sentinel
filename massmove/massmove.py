@@ -11,6 +11,9 @@ class Massmove(BaseCog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def red_delete_data_for_user(self, **kwargs):
+        return
+
     @checks.mod_or_permissions(move_members=True)
     @commands.group(autohelp=False, invoke_without_command=True)
     async def massmove(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
