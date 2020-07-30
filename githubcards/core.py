@@ -76,6 +76,12 @@ class GitHubCards(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.http.session.close())
 
+    async def red_get_data_for_user(self, **kwargs):
+        return {}
+
+    async def red_delete_data_for_user(self, **kwargs):
+        return
+
     async def _get_token(self, api_tokens: Optional[Mapping[str, str]] = None) -> str:
         """Get GitHub token."""
         if api_tokens is None:

@@ -18,6 +18,12 @@ class AntiRP(BaseCog):
 
         self.config.register_guild(**self.def_guild)
 
+    async def red_get_data_for_user(self, **kwargs):
+        return {}
+
+    async def red_delete_data_for_user(self, **kwargs):
+        return
+
     @checks.admin_or_permissions(manage_guild=True)
     @commands.group()
     async def antirp(self, ctx):
