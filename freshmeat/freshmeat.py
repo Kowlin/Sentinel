@@ -15,6 +15,9 @@ class Freshmeat(BaseCog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def red_get_data_for_user(self, **kwargs):
+        return {}
+
     async def red_delete_data_for_user(self, **kwargs):
         return
 
