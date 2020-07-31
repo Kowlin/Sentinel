@@ -316,7 +316,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                     raise
             issue_data_list.append(issue_data)
 
-        if len(issue_data_list) == 0:
+        if not issue_data_list:
             # Fetching of all issues has failed somehow. So end it here.
             return
 
