@@ -15,7 +15,7 @@
         "github",
         "utility"
     ],
-    "min_bot_version": "3.3.11",
+    "min_bot_version": "3.4.0",
     "hidden": false,
     "disabled": false,
     "type": "COG"
