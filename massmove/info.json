@@ -3,6 +3,7 @@
       "Kowlin"
     ],
     "description": "Massmove members out of voice channels.",
+    "end_user_data_statement": "This cog stores no personal data.",
     "short": "Massmove members out of voice channels.",
     "tags": ["moderation","massmove","voice","voicemoderation"],
     "type": "COG",
