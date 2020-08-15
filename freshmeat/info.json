@@ -5,6 +5,7 @@
       "Irdumb (v2 iteration)"
     ],
     "description": "Check out the latest bunch of members with Freshmeat",
+    "end_user_data_statement": "This cog stores no personal data.",
     "short": "Check out the latest bunch of members with Freshmeat",
     "tags": ["moderation","members"],
     "type": "COG",

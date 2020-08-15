@@ -3,6 +3,7 @@
       "Kowlin"
     ],
     "description": "Block any type of rich presence invites",
+    "end_user_data_statement": "This cog stores no personal data.",
     "short": "Block any type of rich presence invites",
     "tags": ["Moderation", "Rich Presence"],
     "type": "COG",
