@@ -1,10 +1,8 @@
 import discord
 from redbot.core import commands, checks, Config
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class AntiRP(BaseCog):
+class AntiRP(commands.Cog):
     """AntiRP: For when hiding buttons in the Discord UI isn't enough."""
 
     def_guild = {
@@ -105,8 +103,18 @@ class AntiRP(BaseCog):
         else:
             await ctx.send("No applications are whitelisted.")
 
+    async def cog_disabled_in_guild(self, guild):
+        # compatibility layer with Red 3.3.10-3.3.12
+        func = getattr(self.bot, "cog_disabled_in_guild", None)
+        if func is None:
+            return False
+        return await func(self, guild)
+
     async def on_message(self, message):
-        if isinstance(message.channel, discord.DMChannel):
+        if message.guild is None:
+            return
+
+        if await self.cog_disabled_in_guild(message.guild):
             return
 
         guild_config = self.config.guild(message.guild)
