@@ -2,9 +2,8 @@ import discord
 import asyncio
 import logging
 import re
-from typing import Mapping, Optional
+from typing import Any, Dict, Mapping, Optional
 
-from redbot import VersionInfo, version_info as red_version
 from redbot.core import checks, commands, Config
 
 from .converters import RepoData
@@ -260,28 +259,39 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             embed.add_field(name="Milestone", value=issue_data.milestone)
         return embed
 
-    @commands.Cog.listener()
-    async def on_message_without_command(self, message):
+    async def is_eligible_as_command(self, message: discord.Message) -> bool:
+        """Check if message is eligible in command-like context."""
+        return (
+            self.http._token
+            and not message.author.bot
+            and message.guild is not None
+            and await self.bot.message_eligible_as_command(message)
+            and not await self.bot.cog_disabled_in_guild(self, message.guild)
+        )
+
+    async def get_matcher_by_message(self, message: discord.Message) -> Optional[Dict[str, Any]]:
+        """Get matcher from message object.
+
+        This also checks if the message is eligible as command and returns None otherwise.
+        """
         await self._ready.wait()
-        if not self.http._token:
-            return
-        if message.author.bot:
-            return
-        guild = message.guild
-        if guild is None:
-            return  # End the function here if its anything but a guild.
-        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+        if not await self.is_eligible_as_command(message):
             return
 
-        cache = self.active_prefix_matchers.get(guild.id, None)
-        if not cache:
+        matcher = self.active_prefix_matchers.get(message.guild.id)
+
+        return matcher
+
+    @commands.Cog.listener()
+    async def on_message_without_command(self, message):
+        if (matcher := await self.get_matcher_by_message(message)) is None:
             return
 
         issue_numbers = set()
         issue_data_list = []
 
         for item in self.splitter.split(message.content):
-            match = cache["pattern"].match(item)
+            match = matcher["pattern"].match(item)
             if match is None:
                 continue
             prefix = match.group(1)
@@ -290,10 +300,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             if number in issue_numbers:
                 continue
             issue_numbers.add(number)
-            # hey, you're the one who wanted to add search queries
-            # now we have to figure out regex for that :aha:
-            # or write a DSL parser (simple™)
-            prefix_data = cache["data"][prefix.lower()]
+            prefix_data = matcher["data"][prefix.lower()]
             owner, repo = prefix_data['owner'], prefix_data['repo']
             try:
                 issue_data = await self.http.find_issue(owner, repo, number)
@@ -309,7 +316,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                     raise
             issue_data_list.append(issue_data)
 
-        if len(issue_data_list) == 0:
+        if not issue_data_list:
             # Fetching of all issues has failed somehow. So end it here.
             return
 
