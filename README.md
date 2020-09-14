@@ -1,2 +1,2 @@
 # sentinel
-Moderation orianted cogs build for Red-DiscordBot
+Moderation oriented cogs built for Red-DiscordBot
