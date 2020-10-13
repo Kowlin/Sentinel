@@ -23,7 +23,7 @@ class Freshmeat(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.bot_has_permission(embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     @checks.admin_or_permissions(kick_members=True)
     async def freshmeat(self, ctx, hours: int = 24):
         """Show the members who joined in the specified timeframe
