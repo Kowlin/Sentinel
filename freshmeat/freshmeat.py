@@ -58,6 +58,9 @@ class Freshmeat(BaseCog):
             page.set_footer(text=f"Page {page_counter} out of {len(pages)}")
             page_counter += 1
 
+        if not pages:
+            return await ctx.send("No new members joined in specified timeframe.")
+
         await menu(
             ctx,
             pages=pages,
