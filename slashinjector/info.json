@@ -1,0 +1,11 @@
+{
+    "author": [
+      "Kowlin"
+    ],
+    "description": "A quick and dirty solution for adding in a slash command parser, so everyone doesn't have to fight over injecting an parser.",
+    "end_user_data_statement": "This cog stores no personal data.",
+    "short": "A quick and dirty solution for adding in a slash command parser, so everyone doesn't have to fight over injecting an parser.",
+    "tags": ["api","injector","parser"],
+    "type": "COG",
+    "install_msg": "Hey there! This cog doesn't do anything on its own, its meant as a quick and dirty solution to parse slash interactions for developers."
+  }
