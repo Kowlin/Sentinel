@@ -58,7 +58,12 @@ class Formatters:
             url=issue_data.author_url,
             icon_url=issue_data.author_avatar_url
         )
-        embed.title = f"{issue_data.title} #{issue_data.number}"
+        number_suffix = f" #{issue_data.number}"
+        max_len = 256 - len(number_suffix)
+        if len(issue_data.title) > max_len:
+            embed.title = f"{issue_data.title[:max_len-3]}...{number_suffix}"
+        else:
+            embed.title = f"{issue_data.title}{number_suffix}"
         embed.url = issue_data.url
         embed.description = issue_data.body_text[:300]
         embed.colour = getattr(IssueStateColour, issue_data.state)
