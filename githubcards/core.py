@@ -4,14 +4,13 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
-import discord
 import asyncio
 import logging
 import re
-
 from typing import Any, Dict, Mapping, Optional
 
-from redbot.core import checks, commands, Config
+import discord
+from redbot.core import Config, checks, commands
 
 from .converters import RepoData
 from .exceptions import ApiError, Unauthorized
@@ -285,8 +284,8 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             # Lmao what's error handling
 
         issue_data_list = []
-        for repo_sth, repo_data in query_data["data"].items():
-            for issue_sth, issue_data in repo_data.items():
+        for repo_data in query_data["data"].values():
+            for issue_data in repo_data.values():
                 if issue_data is not None:
                     issue_data_list.append(Formatters.format_issue_class(issue_data))
 

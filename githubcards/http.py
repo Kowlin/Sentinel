@@ -5,14 +5,11 @@
 """
 
 import logging
-from datetime import datetime
-from typing import List
 
 import aiohttp
 
 from .calls import Queries
-from .formatters import Formatters
-from .data import SearchData, IssueData
+from .data import SearchData
 from .exceptions import ApiError, Unauthorized
 
 baseUrl = "https://api.github.com/graphql"
@@ -65,28 +62,6 @@ class GitHubAPI:
             ratelimit = json['data']['rateLimit']
             log.debug(f"validate_repo; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
             return json
-
-    async def find_issue(self, repoOwner: str, repoName: str, issueID: int):
-        async with self.session.post(
-            baseUrl,
-            json={
-                "query": Queries.findIssue,
-                "variables": {"repoOwner": repoOwner, "repoName": repoName, "issueID": issueID},
-            },
-        ) as call:
-            json = await call.json()
-            if call.status == 401:
-                raise Unauthorized(json["message"])
-            if "errors" in json.keys():
-                raise ApiError(json['errors'])
-            ratelimit = json['data']['rateLimit']
-            issue = json['data']['repository']['issueOrPullRequest']
-            log.debug(f"find_issue; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
-            return await Formatters.format_issue_class(issue)
-
-    async def find_issues(self, repoOwner: str, repoName: str, issueIDs: List[int]):
-        """Note: This is an query for mass fetching"""
-        pass  # TODO
 
     async def search_issues(self, repoOwner: str, repoName: str, searchParam: str):
         query = f"repo:{repoOwner}/{repoName} {searchParam}"
