@@ -63,7 +63,7 @@ class Formatters:
         embed.description = issue_data.body_text[:300]
         embed.colour = getattr(IssueStateColour, issue_data.state)
         formatted_datetime = issue_data.created_at.strftime('%d %b %Y, %H:%M')
-        embed.set_footer(text=f"Created on {formatted_datetime}")
+        embed.set_footer(text=f"{issue_data.name_with_owner} • Created on {formatted_datetime}")
         # let's ignore this for now, since we want this to be compact, *fun*
         # embed.add_field(name=f"Labels [{len(issue_data.labels)}]", value=", ".join(issue_data.labels))
         if issue_data.mergeable_state is not None and issue_data.state == "OPEN":
