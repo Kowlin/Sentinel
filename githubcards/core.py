@@ -196,17 +196,12 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             and not await self.bot.cog_disabled_in_guild(self, message.guild)
         )
 
-    async def get_matcher_by_message(self, message: discord.Message) -> Optional[Dict[str, Any]]:
+    def get_matcher_by_message(self, message: discord.Message) -> Optional[Dict[str, Any]]:
         """Get matcher from message object.
 
         This also checks if the message is eligible as command and returns None otherwise.
         """
-        if not await self.is_eligible_as_command(message):
-            return
-
-        matcher = self.active_prefix_matchers.get(message.guild.id)
-
-        return matcher
+        return self.active_prefix_matchers.get(message.guild.id)
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
@@ -220,6 +215,9 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
         await self._ready.wait()
+
+        if not await self.is_eligible_as_command(message):
+            return
 
         # --- MODULE FOR SEARCHING! ---
         # JSON is cached right... so this should be fine...
@@ -236,7 +234,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                     await message.channel.send(embed=embed)
                     return
 
-        if (matcher := await self.get_matcher_by_message(message)) is None:
+        if (matcher := self.get_matcher_by_message(message)) is None:
             return
 
         # --- MODULE FOR GETTING EXISTING PREFIXES ---
