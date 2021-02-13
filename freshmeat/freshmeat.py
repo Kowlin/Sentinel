@@ -1,3 +1,9 @@
+"""
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+"""
+
 import discord
 
 from redbot.core import commands
@@ -23,6 +29,7 @@ class Freshmeat(BaseCog):
 
     @commands.command()
     @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
     @checks.admin_or_permissions(kick_members=True)
     async def freshmeat(self, ctx, hours: int = 24):
         """Show the members who joined in the specified timeframe
@@ -56,6 +63,9 @@ class Freshmeat(BaseCog):
         for page in pages:
             page.set_footer(text=f"Page {page_counter} out of {len(pages)}")
             page_counter += 1
+
+        if not pages:
+            return await ctx.send("No new members joined in specified timeframe.")
 
         await menu(
             ctx,
