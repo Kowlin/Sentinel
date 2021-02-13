@@ -266,8 +266,6 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         if len(fetchable_repos) == 0:
             return  # End if no repos are found to query over.
 
-        log.debug(fetchable_repos)  # TODO REMOVE ME LATER ASS!
-
         async with message.channel.typing():
             await self._query_and_post(message, fetchable_repos)
 
