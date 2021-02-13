@@ -6,9 +6,6 @@ from urllib.parse import quote_plus
 
 @dataclass(init=True)
 class SearchData(object):
-    ratelimit_remaining: int  # data/rateLimit
-    ratelimit_limit: int
-    ratelimit_cost: int
     total: int  # data/search/issueCount
     results: list  # data/search/nodes
     query: str
@@ -20,9 +17,7 @@ class SearchData(object):
 
 @dataclass(init=True)
 class IssueData(object):
-    ratelimit_remaining: int  # data/rateLimit
-    ratelimit_limit: int
-    ratelimit_cost: int
+    name_with_owner: str  # data/repository
     author_name: str  # data/issue/author
     author_url: str
     author_avatar_url: str
@@ -39,7 +34,14 @@ class IssueData(object):
 
 
 @dataclass(init=True)
-class IssueStatecolour(object):
-    OPEN: 0x6cc644
-    CLOSED: 0xbd2c00
-    MERGED: 0x6e5494
+class PartialIssueData(object):
+    name_with_owner: str  # data/repository
+    number: int  # data/issue
+    url: str
+
+
+@dataclass(init=True)
+class IssueStateColour(object):
+    OPEN: int = 0x6cc644
+    CLOSED: int = 0xbd2c00
+    MERGED: int = 0x6e5494
