@@ -5,12 +5,11 @@
 """
 
 import logging
-from datetime import datetime
 
 import aiohttp
 
 from .calls import Queries
-from .data import SearchData, IssueData
+from .data import SearchData
 from .exceptions import ApiError, Unauthorized
 
 baseUrl = "https://api.github.com/graphql"
@@ -64,58 +63,6 @@ class GitHubAPI:
             log.debug(f"validate_repo; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
             return json
 
-    async def find_issue(self, repoOwner: str, repoName: str, issueID: int):
-        async with self.session.post(
-            baseUrl,
-            json={
-                "query": Queries.findIssue,
-                "variables": {"repoOwner": repoOwner, "repoName": repoName, "issueID": issueID},
-            },
-        ) as call:
-            json = await call.json()
-            if call.status == 401:
-                raise Unauthorized(json["message"])
-            if "errors" in json.keys():
-                raise ApiError(json['errors'])
-            ratelimit = json['data']['rateLimit']
-            issue = json['data']['repository']['issueOrPullRequest']
-            log.debug(f"find_issue; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
-
-            mergeable_state = issue.get("mergeable", None)
-            is_draft = issue.get("isDraft", None)
-            milestone = issue["milestone"]
-            if milestone is not None:
-                milestone_title = milestone["title"]
-            else:
-                milestone_title = None
-
-            if issue['author'] is None:
-                issue['author'] = {
-                    "login": "Ghost",
-                    "url": "https://github.com/ghost",
-                    "avatarUrl": "https://avatars2.githubusercontent.com/u/10137?u=b1951d34a583cf12ec0d3b0781ba19be97726318&v=4"
-                }
-
-            data = IssueData(
-                ratelimit_remaining=ratelimit['remaining'],
-                ratelimit_limit=ratelimit['limit'],
-                ratelimit_cost=ratelimit['cost'],
-                author_name=issue['author']['login'],
-                author_url=issue['author']['url'],
-                author_avatar_url=issue['author']['avatarUrl'],
-                issue_type=issue['__typename'],
-                number=issue['number'],
-                title=issue['title'],
-                body_text=issue['body'],
-                url=issue['url'],
-                state=issue['state'],
-                is_draft=is_draft,
-                mergeable_state=mergeable_state,
-                milestone=milestone_title,
-                created_at=datetime.strptime(issue['createdAt'], '%Y-%m-%dT%H:%M:%SZ')
-            )
-            return data
-
     async def search_issues(self, repoOwner: str, repoName: str, searchParam: str):
         query = f"repo:{repoOwner}/{repoName} {searchParam}"
         async with self.session.post(
@@ -133,11 +80,19 @@ class GitHubAPI:
             log.debug(f"search_issues; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
 
             data = SearchData(
-                ratelimit_remaining=ratelimit['remaining'],
-                ratelimit_limit=ratelimit['limit'],
-                ratelimit_cost=ratelimit['cost'],
                 total=search_results['issueCount'],
                 results=search_results['nodes'],
                 query=query
             )
             return data
+
+    async def send_query(self, query: str):
+        async with self.session.post(
+            baseUrl,
+            json={
+                "query": query
+            }
+        ) as call:
+            json = await call.json()
+            log.debug(f"send_query; no RL data")
+            return json

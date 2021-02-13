@@ -4,17 +4,17 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
-import discord
 import asyncio
 import logging
 import re
 from typing import Any, Dict, Mapping, Optional
 
-from redbot.core import checks, commands, Config
+import discord
+from redbot.core import Config, checks, commands
 
 from .converters import RepoData
-from .data import SearchData, IssueData
 from .exceptions import ApiError, Unauthorized
+from .formatters import FetchableReposDict, Formatters, Query
 from .http import GitHubAPI
 
 log = logging.getLogger("red.githubcards.core")
@@ -47,12 +47,6 @@ class GitHubCards(commands.Cog):
         self.splitter = re.compile(r"[!?().,;:+|&/`\s]")
         self._ready = asyncio.Event()
         self.http: GitHubAPI = None  # assigned in initialize()
-
-        self.stateColours = {  # Can't be bothered to do this properly ATM
-            'OPEN': 0x6cc644,
-            'CLOSED': 0xbd2c00,
-            'MERGED': 0x6e5494
-        }
 
     async def initialize(self):
         """ cache preloading """
@@ -101,24 +95,18 @@ class GitHubCards(commands.Cog):
         """Create GitHub API client."""
         self.http = GitHubAPI(token=await self._get_token())
 
-    @commands.Cog.listener()
-    async def on_red_api_tokens_update(
-        self, service_name: str, api_tokens: Mapping[str, str]
-    ):
-        """Update GitHub token when `[p]set api` command is used."""
-        if service_name != "github":
-            return
-        await self.http.recreate_session(await self._get_token(api_tokens))
-
     @commands.guild_only()
     @commands.command(usage="<prefix> <search_query>")
     async def ghsearch(self, ctx, repo_data: RepoData, *, search_query: str):
-        """Search for issues in GitHub repo."""
-        search_data = await self.http.search_issues(
-            repo_data["owner"], repo_data["repo"], search_query
-        )
-        embed = self.format_search(search_data)
-        await ctx.send(embed=embed)
+        """Search for issues in GitHub repo.
+
+        Protip: You can also search issues via ``prefix#s <search_query>``!"""
+        async with ctx.channel.typing():
+            search_data = await self.http.search_issues(
+                repo_data["owner"], repo_data["repo"], search_query
+            )
+            embed = self.format_search(search_data)
+            await ctx.send(embed=embed)
 
     # Command groups
     @commands.guild_only()
@@ -198,73 +186,6 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
 """
         await ctx.send(message)
 
-    def format_search(self, search_data: SearchData) -> discord.Embed:
-        """Format the search results into an embed"""
-        embed = discord.Embed()
-        embed_body = ""
-        if not search_data.results:
-            embed.description = "Nothing found."
-            return embed
-        for entry in search_data.results[:10]:
-            if entry["state"] == "OPEN":
-                state = "\N{LARGE GREEN CIRCLE}"
-            elif entry["state"] == "CLOSED":
-                state = "\N{LARGE RED CIRCLE}"
-            else:
-                state = "\N{LARGE PURPLE CIRCLE}"
-
-            issue_type = (
-                "Issue"
-                if entry["__typename"] == "Issue"
-                else "Pull Request"
-            )
-            mergeable_state = entry.get("mergeable", None)
-            is_draft = entry.get("isDraft", None)
-            if entry["state"] == "OPEN":
-                if is_draft is True:
-                    state = "\N{PENCIL}\N{VARIATION SELECTOR-16}"
-                elif mergeable_state == "CONFLICTING":
-                    state = "\N{WARNING SIGN}\N{VARIATION SELECTOR-16}"
-                elif mergeable_state == "UNKNOWN":
-                    state = "\N{WHITE QUESTION MARK ORNAMENT}"
-            embed_body += (
-                f"{state} - **{issue_type}** - **[#{entry['number']}]({entry['url']})**\n"
-                f"{entry['title']}\n"
-            )
-        if search_data.total > 10:
-            embed.set_footer(text=f"Showing the first 10 results, {search_data.total} results in total.")
-            embed_body += (
-                "\n\n[Click here for all the results]"
-                f"(https://github.com/search?type=Issues&q={search_data.escaped_query})"
-            )
-        embed.description = embed_body
-        return embed
-
-    def format_issue(self, issue_data: IssueData) -> discord.Embed:
-        """Format a single issue into an embed"""
-        embed = discord.Embed()
-        embed.set_author(
-            name=issue_data.author_name,
-            url=issue_data.author_url,
-            icon_url=issue_data.author_avatar_url
-        )
-        embed.title = f"{issue_data.title} #{issue_data.number}"
-        embed.url = issue_data.url
-        embed.description = issue_data.body_text[:300]
-        embed.colour = self.stateColours[issue_data.state]
-        formatted_datetime = issue_data.created_at.strftime('%d %b %Y, %H:%M')
-        embed.set_footer(text=f"Created on {formatted_datetime}")
-        # let's ignore this for now, since we want this to be compact, *fun*
-        # embed.add_field(name=f"Labels [{len(issue_data.labels)}]", value=", ".join(issue_data.labels))
-        if issue_data.mergeable_state is not None and issue_data.state == "OPEN":
-            mergable_state = issue_data.mergeable_state.capitalize()
-            if issue_data.is_draft is True:
-                mergable_state = "Drafted"
-            embed.add_field(name="Merge Status", value=mergable_state)
-        if issue_data.milestone:
-            embed.add_field(name="Milestone", value=issue_data.milestone)
-        return embed
-
     async def is_eligible_as_command(self, message: discord.Message) -> bool:
         """Check if message is eligible in command-like context."""
         return (
@@ -275,67 +196,110 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             and not await self.bot.cog_disabled_in_guild(self, message.guild)
         )
 
-    async def get_matcher_by_message(self, message: discord.Message) -> Optional[Dict[str, Any]]:
+    def get_matcher_by_message(self, message: discord.Message) -> Optional[Dict[str, Any]]:
         """Get matcher from message object.
 
         This also checks if the message is eligible as command and returns None otherwise.
         """
-        await self._ready.wait()
-        if not await self.is_eligible_as_command(message):
+        return self.active_prefix_matchers.get(message.guild.id)
+
+    @commands.Cog.listener()
+    async def on_red_api_tokens_update(
+        self, service_name: str, api_tokens: Mapping[str, str]
+    ):
+        """Update GitHub token when `[p]set api` command is used."""
+        if service_name != "github":
             return
-
-        matcher = self.active_prefix_matchers.get(message.guild.id)
-
-        return matcher
+        await self.http.recreate_session(await self._get_token(api_tokens))
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
-        if (matcher := await self.get_matcher_by_message(message)) is None:
+        await self._ready.wait()
+
+        if not await self.is_eligible_as_command(message):
             return
 
-        issue_numbers = set()
-        issue_data_list = []
+        # --- MODULE FOR SEARCHING! ---
+        # JSON is cached right... so this should be fine...
+        # If I really want to *enjoy* this... probs rework this into a pseudo command module
+        guild_data = await self.config.custom("REPO", message.guild.id).all()
+        for prefix, data in guild_data.items():
+            if message.content.startswith(f"{prefix}#s "):
+                async with message.channel.typing():
+                    search_query = message.content.replace(f"{prefix}#s ", "")
+                    search_data = await self.http.search_issues(
+                        data["owner"], data["repo"], search_query
+                    )
+                    embed = Formatters.format_search(search_data)
+                    await message.channel.send(embed=embed)
+                    return
 
+        if (matcher := self.get_matcher_by_message(message)) is None:
+            return
+
+        # --- MODULE FOR GETTING EXISTING PREFIXES ---
+        fetchable_repos: Dict[str, FetchableReposDict] = {}
         for item in self.splitter.split(message.content):
             match = matcher["pattern"].match(item)
             if match is None:
                 continue
-            prefix = match.group(1)
+            prefix = match.group(1).lower()
             number = int(match.group(2))
-            # no need to post card for same issue number in one message twice
-            if number in issue_numbers:
+
+            prefix_data = matcher["data"][prefix]
+            name_with_owner = (prefix_data['owner'], prefix_data['repo'])
+
+            # Magical fetching aquesition done.
+            # Ensure that the repo exists as a key
+            if name_with_owner not in fetchable_repos:
+                fetchable_repos[name_with_owner] = {
+                    "owner": prefix_data["owner"],
+                    "repo": prefix_data["repo"],
+                    "prefix": prefix,
+                    "fetchable_issues": set()
+                }
+            # No need to post card for same issue number from the same repo in one message twice
+            if number in fetchable_repos[name_with_owner]['fetchable_issues']:
                 continue
-            issue_numbers.add(number)
-            prefix_data = matcher["data"][prefix.lower()]
-            owner, repo = prefix_data['owner'], prefix_data['repo']
-            try:
-                issue_data = await self.http.find_issue(owner, repo, number)
-            except Unauthorized:
-                log.error("Set GitHub token is invalid.")
-                return
-            except ApiError as e:
-                # possibly log
-                if e.args[0][0]["type"] == "NOT_FOUND":
-                    log.debug(f"Issue with number {number} on repo {owner}/{repo} couldn't be found")
-                    continue  # Do not return here as there may be more then one issue
-                else:
-                    raise
-            issue_data_list.append(issue_data)
+            fetchable_repos[name_with_owner]['fetchable_issues'].add(number)
+
+        if len(fetchable_repos) == 0:
+            return  # End if no repos are found to query over.
+
+        async with message.channel.typing():
+            await self._query_and_post(message, fetchable_repos)
+
+    async def _query_and_post(self, message, fetchable_repos):
+        # --- FETCHING ---
+        query = Query.build_query(fetchable_repos)
+        try:
+            query_data = await self.http.send_query(query.query_string)
+        except Unauthorized:
+            log.error("The current GitHub token is invalid.")
+            return
+            # Lmao what's error handling
+
+        issue_data_list = []
+        for repo_data in query_data["data"].values():
+            for issue_data in repo_data.values():
+                if issue_data is not None:
+                    issue_data_list.append(Formatters.format_issue_class(issue_data))
 
         if not issue_data_list:
             # Fetching of all issues has failed somehow. So end it here.
             return
 
+        # --- SENDING ---
         issue_embeds = []
         overflow = []
 
         for index, issue in enumerate(issue_data_list):
             if index < 2:
-                e = self.format_issue(issue)
+                e = Formatters.format_issue(issue)
                 issue_embeds.append(e)
                 continue
             else:
-                overflow.append(f"[#{issue.number}]({issue.url})")
+                overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
 
         for embed in issue_embeds:
             await message.channel.send(embed=embed)

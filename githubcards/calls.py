@@ -37,53 +37,75 @@ class Queries:
             }
         }"""
 
-    findIssue = """
-        query FindIssueOrPr($repoName: String!, $repoOwner: String!, $issueID: Int!) {
-            repository(owner: $repoOwner, name: $repoName) {
-                issueOrPullRequest(number: $issueID) {
-                    __typename
-                    ... on PullRequest {
-                       number
-                        title
-                        body
-                        url
-                        createdAt
-                        state
-                        mergeable
-                        isDraft
-                        milestone {
-                            title
-                        }
-                        author {
-                            login
-                            avatarUrl
-                            url
-                        }
-                    }
-                    ... on Issue {
-                        number
-                        title
-                        body
-                        url
-                        createdAt
-                        state
-                        milestone {
-                            title
-                        }
-                        author {
-                            login
-                            avatarUrl
-                            url
-                        }
-                    }
-                }
+    findIssueQuery = """query FindIssueOrPr {
+        %(repositories)s
+    }"""
+
+    findIssueRepository = """repo%(idx)s: repository(owner: "%(owner)s", name: "%(repo)s") {
+        %(issues)s
+    }"""
+
+    findIssueFullData = """issue%(number)s: issueOrPullRequest(number: %(number)s) {
+        __typename
+        ... on PullRequest {
+            number
+            title
+            body
+            url
+            createdAt
+            state
+            mergeable
+            isDraft
+            milestone {
+                title
             }
-            rateLimit {
-                cost
-                remaining
-                limit
+            author {
+                login
+                avatarUrl
+                url
             }
-        }"""
+            repository {
+                nameWithOwner
+            }
+        }
+        ... on Issue {
+            number
+            title
+            body
+            url
+            createdAt
+            state
+            milestone {
+                title
+            }
+            author {
+                login
+                avatarUrl
+                url
+            }
+            repository {
+                nameWithOwner
+            }
+        }
+    }"""
+
+    findIssuePartialData = """issue-{number}: issueOrPullRequest(number: {number}) {
+        __typename
+        ... on PullRequest {
+            number
+            url
+            repository {
+                nameWithOwner
+            }
+        }
+        ... on Issue {
+            number
+            url
+            repository {
+                nameWithOwner
+            }
+        }
+    }"""
 
     searchIssues = """
         query SearchIssues($query: String!) {
