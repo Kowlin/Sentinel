@@ -5,6 +5,7 @@
 """
 
 import discord
+from redbot.core.utils.chat_formatting import pagify
 
 from datetime import datetime
 from typing import Dict, List, Set, TypedDict
@@ -65,7 +66,10 @@ class Formatters:
         else:
             embed.title = f"{issue_data.title}{number_suffix}"
         embed.url = issue_data.url
-        embed.description = issue_data.body_text[:300]
+        if len(issue_data.body_text) > 300:
+            embed.description = next(pagify(issue_data.body_text, delims=[" ", "\n"], page_length=300, shorten_by=0)) + "..."
+        else:
+            embed.description = issue_data.body_text
         embed.colour = getattr(IssueStateColour, issue_data.state)
         formatted_datetime = issue_data.created_at.strftime('%d %b %Y, %H:%M')
         embed.set_footer(text=f"{issue_data.name_with_owner} • Created on {formatted_datetime}")
