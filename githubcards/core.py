@@ -105,7 +105,7 @@ class GitHubCards(commands.Cog):
             search_data = await self.http.search_issues(
                 repo_data["owner"], repo_data["repo"], search_query
             )
-            embed = self.format_search(search_data)
+            embed = Formatters.format_search(search_data)
             await ctx.send(embed=embed)
 
     # Command groups
