@@ -1,12 +1,15 @@
 import logging
-from typing import Mapping
+from typing import Mapping, Optional
 
 import discord
 import sentry_sdk
 from redbot.core import checks, commands
+from redbot.core.utils.chat_formatting import inline
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk import add_breadcrumb
+
+log = logging.getLogger("red.sentinel.sentryio.core")
 
 
 class SentryIO(commands.Cog):
@@ -14,8 +17,35 @@ class SentryIO(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    async def initialize(self) -> None:
+        self.init_sentry(await self._get_dsn())
+
+    def cog_unload(self) -> None:
+        client = sentry_sdk.Hub.current.client
+        if client is not None:
+            client.close()
+
+    async def red_get_data_for_user(self, **kwargs):
+        return {}
+
+    async def red_delete_data_for_user(self, **kwargs):
+        return
+
+    async def _get_dsn(self, api_tokens: Optional[Mapping[str, str]] = None) -> str:
+        """Get Sentry DSN."""
+        if api_tokens is None:
+            api_tokens = await self.bot.get_shared_api_tokens("sentry")
+
+        dsn = api_tokens.get("dsn", "")
+        if not dsn:
+            log.error("No valid DSN found")
+        return dsn
+
+    def init_sentry(self, dsn: str) -> None:
+        self.close_sentry()
         sentry_sdk.init(
-            "DAMNURLHERE",
+            dsn,
             traces_sample_rate=1.0,
             shutdown_timeout=0.1,
             integrations=[
@@ -27,16 +57,10 @@ class SentryIO(commands.Cog):
             ]
         )
 
-    def _cog_unload(self):
+    def close_sentry(self) -> None:
         client = sentry_sdk.Hub.current.client
         if client is not None:
             client.close()
-
-    async def red_get_data_for_user(self, **kwargs):
-        return {}
-
-    async def red_delete_data_for_user(self, **kwargs):
-        return
 
     @checks.is_owner()
     @commands.command()
@@ -48,11 +72,28 @@ class SentryIO(commands.Cog):
     async def sentry_group(self, ctx):
         """Configure Sentry.IO stuffies"""  # TODO
 
+    @sentry_group.command(name="instructions")
+    async def instructions(self, ctx):
+        """
+        Learn on how to setup SentryIO cog.
+
+        *This will be the SECOND time that someone will ACTUALLY read instructions*
+        """
+        message = (
+            "1. Go to Settings page of your Sentry Account at <https://sentry.io/settings>\n"
+            "2. Go to Projects list and select the project you want to use for this bot.\n"
+            "3. Select Client Keys (DSN) menu entry at the left.\n"
+            "4. Copy your DSN and go to your DMs with the bot, and run the following command:\n"
+        ) + inline(f"{ctx.clean_prefix}set api sentry dsn [YOUR NEW TOKEN]")
+        await ctx.send(message)
+
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
         self, service_name: str, api_tokens: Mapping[str, str]
     ):
-        pass
+        if service_name != "sentry":
+            return
+        self.init_sentry(await self._get_dsn(api_tokens))
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
