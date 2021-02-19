@@ -97,6 +97,8 @@ class SentryIO(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        if not ctx.command:
+            return
         add_breadcrumb(
             type="user",
             category="on_command_error",
