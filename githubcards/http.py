@@ -66,12 +66,12 @@ class GitHubAPI:
     async def search_issues(self, repoOwner: str, repoName: str, searchParam: str):
         query = f"repo:{repoOwner}/{repoName} {searchParam}"
         async with self.session.post(
-            baseUrl,
-            json={
-                "query": Queries.searchIssues,
-                "variables": {"query": query}
-            }
-        ) as call:
+                baseUrl,
+                json={
+                    "query": Queries.searchIssues,
+                    "variables": {"query": query}
+                }
+            ) as call:
             json = await call.json()
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
@@ -79,12 +79,11 @@ class GitHubAPI:
             search_results = json['data']['search']
             log.debug(f"search_issues; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
 
-            data = SearchData(
+            return SearchData(
                 total=search_results['issueCount'],
                 results=search_results['nodes'],
                 query=query
             )
-            return data
 
     async def send_query(self, query: str):
         async with self.session.post(

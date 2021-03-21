@@ -20,11 +20,7 @@ class Formatters:
         mergeable_state = issue.get("mergeable", None)
         is_draft = issue.get("isDraft", None)
         milestone = issue["milestone"]
-        if milestone is not None:
-            milestone_title = milestone["title"]
-        else:
-            milestone_title = None
-
+        milestone_title = milestone["title"] if milestone is not None else None
         if issue['author'] is None:
             issue['author'] = {
                 "login": "Ghost",
@@ -32,7 +28,7 @@ class Formatters:
                 "avatarUrl": "https://avatars2.githubusercontent.com/u/10137?u=b1951d34a583cf12ec0d3b0781ba19be97726318&v=4"
             }
 
-        data = IssueData(
+        return IssueData(
             name_with_owner=issue['repository']['nameWithOwner'],
             author_name=issue['author']['login'],
             author_url=issue['author']['url'],
@@ -48,7 +44,6 @@ class Formatters:
             milestone=milestone_title,
             created_at=datetime.strptime(issue['createdAt'], '%Y-%m-%dT%H:%M:%SZ')
         )
-        return data
 
     @staticmethod
     def format_issue(issue_data: IssueData) -> discord.Embed:
@@ -145,9 +140,11 @@ class Query:
         repo_queries = []
         repos = list(fetchable_repos.values())
         for idx, repo_data in enumerate(repos):
-            issue_queries = []
-            for issue in repo_data['fetchable_issues']:
-                issue_queries.append(Queries.findIssueFullData % {"number": issue})
+            issue_queries = [
+                Queries.findIssueFullData % {"number": issue}
+                for issue in repo_data['fetchable_issues']
+            ]
+
             repo_queries.append(
                 Queries.findIssueRepository
                 % {

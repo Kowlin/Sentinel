@@ -40,15 +40,17 @@ class Freshmeat(BaseCog):
         elif hours > 300:
             return await ctx.send("Please use something less then 300 hours.")
 
-        member_list = []
-        for member in ctx.guild.members:
-            if member.joined_at > ctx.message.created_at - datetime.timedelta(hours=hours):
-                member_list.append([member.display_name, member.id, member.joined_at])
+        member_list = [
+            [member.display_name, member.id, member.joined_at]
+            for member in ctx.guild.members
+            if member.joined_at
+            > ctx.message.created_at - datetime.timedelta(hours=hours)
+        ]
 
         member_list.sort(key=lambda member: member[2], reverse=True)
-        member_string = ""
-        for member in member_list:
-            member_string += f"\n{member[0]} ({member[1]})"
+        member_string = "".join(
+            f"\n{member[0]} ({member[1]})" for member in member_list
+        )
 
         pages = []
         for page in pagify(escape(member_string, formatting=True), page_length=1000):
@@ -59,11 +61,8 @@ class Freshmeat(BaseCog):
             )
             pages.append(embed)
 
-        page_counter = 1
-        for page in pages:
+        for page_counter, page in enumerate(pages, start=1):
             page.set_footer(text=f"Page {page_counter} out of {len(pages)}")
-            page_counter += 1
-
         if not pages:
             return await ctx.send("No new members joined in specified timeframe.")
 
