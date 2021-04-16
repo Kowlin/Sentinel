@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from urllib.parse import quote_plus
 
 
@@ -33,6 +33,7 @@ class IssueData(object):
     url: str
     body_text: str
     state: str
+    labels: Tuple[str, ...]
     created_at: datetime
     is_draft: Optional[bool] = None
     mergeable_state: Optional[str] = None

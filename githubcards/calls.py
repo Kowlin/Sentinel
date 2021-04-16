@@ -66,6 +66,11 @@ class Queries:
             repository {
                 nameWithOwner
             }
+            labels(first:100) {
+                nodes {
+                    name
+                }
+            }
         }
         ... on Issue {
             number
@@ -84,6 +89,11 @@ class Queries:
             }
             repository {
                 nameWithOwner
+            }
+            labels(first:100) {
+                nodes {
+                    name
+                }
             }
         }
     }"""
