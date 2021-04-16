@@ -7,7 +7,6 @@
 """
 
 
-
 class Queries:
     """Prebuild GraphQL query calls"""
 
@@ -118,8 +117,8 @@ class Queries:
                         number
                         title
                         url
-                }
-                ... on PullRequest {
+                    }
+                    ... on PullRequest {
                         mergeable
                         isDraft
                         state
