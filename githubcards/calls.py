@@ -7,7 +7,6 @@
 """
 
 
-
 class Queries:
     """Prebuild GraphQL query calls"""
 
@@ -67,6 +66,11 @@ class Queries:
             repository {
                 nameWithOwner
             }
+            labels(first:100) {
+                nodes {
+                    name
+                }
+            }
         }
         ... on Issue {
             number
@@ -86,23 +90,10 @@ class Queries:
             repository {
                 nameWithOwner
             }
-        }
-    }"""
-
-    findIssuePartialData = """issue-{number}: issueOrPullRequest(number: {number}) {
-        __typename
-        ... on PullRequest {
-            number
-            url
-            repository {
-                nameWithOwner
-            }
-        }
-        ... on Issue {
-            number
-            url
-            repository {
-                nameWithOwner
+            labels(first:100) {
+                nodes {
+                    name
+                }
             }
         }
     }"""
@@ -118,8 +109,8 @@ class Queries:
                         number
                         title
                         url
-                }
-                ... on PullRequest {
+                    }
+                    ... on PullRequest {
                         mergeable
                         isDraft
                         state
