@@ -40,13 +40,6 @@ class IssueData(object):
 
 
 @dataclass(init=True)
-class PartialIssueData(object):
-    name_with_owner: str  # data/repository
-    number: int  # data/issue
-    url: str
-
-
-@dataclass(init=True)
 class IssueStateColour(object):
     OPEN: int = 0x6cc644
     CLOSED: int = 0xbd2c00

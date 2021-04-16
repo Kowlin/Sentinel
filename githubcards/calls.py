@@ -88,24 +88,6 @@ class Queries:
         }
     }"""
 
-    findIssuePartialData = """issue-{number}: issueOrPullRequest(number: {number}) {
-        __typename
-        ... on PullRequest {
-            number
-            url
-            repository {
-                nameWithOwner
-            }
-        }
-        ... on Issue {
-            number
-            url
-            repository {
-                nameWithOwner
-            }
-        }
-    }"""
-
     searchIssues = """
         query SearchIssues($query: String!) {
             search(type: ISSUE, query: $query, first: 15) {
