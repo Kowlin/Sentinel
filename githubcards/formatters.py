@@ -78,7 +78,7 @@ class Formatters:
         if issue_data.labels:
             embed.add_field(
                 name=f"Labels [{len(issue_data.labels)}]",
-                value=", ".join(issue_data.labels),
+                value=", ".join(issue_data.labels[:5]),
             )
         if issue_data.mergeable_state is not None and issue_data.state == "OPEN":
             mergable_state = issue_data.mergeable_state.capitalize()
