@@ -73,7 +73,7 @@ class Formatters:
         else:
             embed.description = issue_data.body_text
         embed.colour = getattr(IssueStateColour, issue_data.state)
-        formatted_datetime = issue_data.created_at.strftime('%d %b %Y, %H:%M')
+        formatted_datetime = f"<t:{issue_data.created_at.timestamp()}:f>"
         embed.set_footer(text=f"{issue_data.name_with_owner} • Created on {formatted_datetime}")
         if issue_data.labels:
             embed.add_field(
