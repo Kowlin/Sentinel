@@ -73,8 +73,6 @@ class Formatters:
         else:
             embed.description = issue_data.body_text
         embed.colour = getattr(IssueStateColour, issue_data.state)
-        formatted_datetime = f"<t:{int(issue_data.created_at.timestamp())}:f>"
-        embed.set_footer(text=f"{issue_data.name_with_owner} • Created on {formatted_datetime}")
         if issue_data.labels:
             embed.add_field(
                 name=f"Labels [{len(issue_data.labels)}]",
@@ -86,7 +84,13 @@ class Formatters:
                 mergable_state = "Drafted"
             embed.add_field(name="Merge Status", value=mergable_state)
         if issue_data.milestone:
-            embed.add_field(name="Milestone", value=issue_data.milestone)
+            embed.add_field(name="Milestone", value=issue_data.milestone)    
+        formatted_datetime = f"<t:{int(issue_data.created_at.timestamp())}:f>"
+        embed.add_field(
+            name="\u200b",
+            value=f"{issue_data.name_with_owner} • Created on {formatted_datetime}",
+            inline=False,
+        )
         return embed
 
     @staticmethod
