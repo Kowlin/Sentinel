@@ -48,7 +48,7 @@ class Formatters:
             mergeable_state=mergeable_state,
             milestone=milestone_title,
             labels=labels,
-            created_at=datetime.strptime(issue['createdAt'], '%Y-%m-%dT%H:%M:%SZ')
+            created_at=datetime.strptime(issue['createdAt'], '%Y-%m-%dT%H:%M:%S%z')
         )
         return data
 
