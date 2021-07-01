@@ -4,13 +4,16 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 import discord
 from redbot.core import Config, checks, commands
+from redbot.core.bot import Red
 
 from .converters import RepoData
 from .exceptions import ApiError, Unauthorized
@@ -55,9 +58,38 @@ class OverflowButton(discord.ui.Button):
         )
 
 
-class OverflowView(discord.ui.View):
-    def __init__(self, embeds: list):
-        super().__init__()
+class OverflowPersistentSelect(discord.ui.Select):
+    def __init__(self, *, cog: GitHubCards, **kwargs):
+        super().__init__(**kwargs)
+        self.cog = cog
+
+    async def callback(self, interaction: discord.Interaction):
+        fetchable_repos = {}
+        if (matcher := self.cog.get_matcher_by_message(interaction.message)) is None:
+            return fetchable_repos
+
+        for item in self.values:
+            self.cog.maybe_add_fetchable_issue(fetchable_repos, matcher, item)
+
+        await self.cog.query_and_post(
+            message=None,
+            fetchable_repos=fetchable_repos,
+            interaction_response=interaction.response
+        )
+
+
+class OverflowPersistentView(discord.ui.View):
+    def __init__(self, *, cog: GitHubCards, options: list = discord.utils.MISSING):
+        super().__init__(timeout=None)
+        persistent_select = OverflowPersistentSelect(
+            options=options, custom_id=f"kowlin/sentinel-{cog.bot.user.id}", cog=cog
+        )
+        self.add_item(persistent_select)
+
+
+class OverflowView(OverflowPersistentView):
+    def __init__(self, *, cog: GitHubCards, options: list, embeds: list):
+        super().__init__(cog=cog, options=options)
         self.add_item(OverflowButton(embeds))
 
 
@@ -77,12 +109,17 @@ class GitHubCards(commands.Cog):
         self.active_prefix_matchers = {}
         self.splitter = re.compile(r"[!?().,;:+|&/`\s]")
         self._ready = asyncio.Event()
-        self.http: GitHubAPI = None  # assigned in initialize()
+        # assigned in initialize()
+        self.http: GitHubAPI = None
+        self.view = None
 
     async def initialize(self):
         """ cache preloading """
         await self.rebuild_cache_for_guild()
         await self._create_client()
+        await self.bot.wait_until_red_ready()
+        self.view = OverflowPersistentView(cog=self)
+        self.bot.add_view(self.view)
         self._ready.set()
 
     async def rebuild_cache_for_guild(self, *guild_ids):
@@ -104,6 +141,8 @@ class GitHubCards(commands.Cog):
         await self._ready.wait()
 
     def cog_unload(self):
+        if self.view is not None:
+            self.view.stop()
         self.bot.loop.create_task(self.http.session.close())
 
     async def red_get_data_for_user(self, **kwargs):
@@ -265,42 +304,51 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                     await message.channel.send(embed=embed)
                     return
 
-        if (matcher := self.get_matcher_by_message(message)) is None:
-            return
-
         # --- MODULE FOR GETTING EXISTING PREFIXES ---
-        fetchable_repos: Dict[str, FetchableReposDict] = {}
-        for item in self.splitter.split(message.content):
-            match = matcher["pattern"].match(item)
-            if match is None:
-                continue
-            prefix = match.group(1).lower()
-            number = int(match.group(2))
+        fetchable_repos = self.get_fetchable_repos(message)
 
-            prefix_data = matcher["data"][prefix]
-            name_with_owner = (prefix_data['owner'], prefix_data['repo'])
-
-            # Magical fetching aquesition done.
-            # Ensure that the repo exists as a key
-            if name_with_owner not in fetchable_repos:
-                fetchable_repos[name_with_owner] = {
-                    "owner": prefix_data["owner"],
-                    "repo": prefix_data["repo"],
-                    "prefix": prefix,
-                    "fetchable_issues": set()
-                }
-            # No need to post card for same issue number from the same repo in one message twice
-            if number in fetchable_repos[name_with_owner]['fetchable_issues']:
-                continue
-            fetchable_repos[name_with_owner]['fetchable_issues'].add(number)
-
-        if len(fetchable_repos) == 0:
+        if not fetchable_repos:
             return  # End if no repos are found to query over.
 
         async with message.channel.typing():
-            await self._query_and_post(message, fetchable_repos)
+            await self.query_and_post(message, fetchable_repos)
 
-    async def _query_and_post(self, message, fetchable_repos):
+    def get_fetchable_repos(self, message) -> dict:
+        fetchable_repos: Dict[Tuple[str, str], FetchableReposDict] = {}
+
+        if (matcher := self.get_matcher_by_message(message)) is None:
+            return fetchable_repos
+
+        for item in self.splitter.split(message.content):
+            self.maybe_add_fetchable_issue(fetchable_repos, matcher, item)
+
+        return fetchable_repos
+
+    def maybe_add_fetchable_issue(self, fetchable_repos: dict, matcher, item: str) -> None:
+        match = matcher["pattern"].match(item)
+        if match is None:
+            return
+        prefix = match.group(1).lower()
+        number = int(match.group(2))
+
+        prefix_data = matcher["data"][prefix]
+        name_with_owner = (prefix_data['owner'], prefix_data['repo'])
+
+        # Magical fetching aquesition done.
+        # Ensure that the repo exists as a key
+        if name_with_owner not in fetchable_repos:
+            fetchable_repos[name_with_owner] = {
+                "owner": prefix_data["owner"],
+                "repo": prefix_data["repo"],
+                "prefix": prefix,
+                "fetchable_issues": set()
+            }
+        # No need to post card for same issue number from the same repo in one message twice
+        if number in fetchable_repos[name_with_owner]['fetchable_issues']:
+            return
+        fetchable_repos[name_with_owner]['fetchable_issues'].add(number)
+
+    async def query_and_post(self, message, fetchable_repos, *, interaction_response=None):
         # --- FETCHING ---
         query = Query.build_query(fetchable_repos)
         try:
@@ -324,6 +372,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         issue_embeds = []
         overflow = []
         overflow_embeds = []
+        overflow_options = []
 
         for index, issue in enumerate(issue_data_list):
             if index < 1:
@@ -333,14 +382,24 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
             else:
                 e = Formatters.format_issue(issue)
                 overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
+                prefix = fetchable_repos[tuple(issue.name_with_owner.split("/"))]["prefix"]
+                # TODO: account for the Select option and char limit
+                overflow_options.append(
+                    discord.SelectOption(
+                        label=f"{prefix}#{issue.number}", value=f"{prefix}#{issue.number}"
+                    )
+                )
                 overflow_embeds.append(e)
 
+        if interaction_response is not None:
+            await interaction_response.send_message(embeds=issue_embeds, ephemeral=True)
+            return
         for index, embed in enumerate(issue_embeds):
             await message.channel.send(embed=embed)
-        if len(overflow) != 0:
+        if overflow:
             embed = discord.Embed()
             embed.description = " • ".join(overflow)
             await message.channel.send(
                 embed=embed,
-                view=OverflowView(embeds=overflow_embeds)
+                view=OverflowView(cog=self, embeds=overflow_embeds, options=overflow_options)
             )
