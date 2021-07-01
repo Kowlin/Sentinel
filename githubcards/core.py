@@ -79,18 +79,35 @@ class OverflowPersistentSelect(discord.ui.Select):
 
 
 class OverflowPersistentView(discord.ui.View):
-    def __init__(self, *, cog: GitHubCards, options: list = discord.utils.MISSING):
-        super().__init__(timeout=None)
+    def __init__(
+        self,
+        *,
+        cog: GitHubCards,
+        options: list = discord.utils.MISSING,
+        timeout: Optional[float] = None,
+    ):
+        super().__init__(timeout=timeout)
         persistent_select = OverflowPersistentSelect(
-            options=options, custom_id=f"kowlin/sentinel-{cog.bot.user.id}", cog=cog
+            cog=cog,
+            custom_id=f"kowlin/sentinel-{cog.bot.user.id}",
+            placeholder="Show issue",
+            options=options,
         )
         self.add_item(persistent_select)
 
 
 class OverflowView(OverflowPersistentView):
     def __init__(self, *, cog: GitHubCards, options: list, embeds: list):
-        super().__init__(cog=cog, options=options)
-        self.add_item(OverflowButton(embeds))
+        super().__init__(cog=cog, options=options, timeout=180.0)
+        self.message: Optional[discord.Message] = None
+        self.button = OverflowButton(embeds)
+        self.add_item(self.button)
+
+    async def on_timeout(self) -> None:
+        if self.message is None:
+            return
+        self.remove_item(self.button)
+        await self.message.edit(view=self)
 
 
 class GitHubCards(commands.Cog):
@@ -399,7 +416,5 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         if overflow:
             embed = discord.Embed()
             embed.description = " • ".join(overflow)
-            await message.channel.send(
-                embed=embed,
-                view=OverflowView(cog=self, embeds=overflow_embeds, options=overflow_options)
-            )
+            view = OverflowView(cog=self, embeds=overflow_embeds, options=overflow_options)
+            view.message = await message.channel.send(embed=embed, view=view)
