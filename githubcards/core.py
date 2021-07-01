@@ -30,6 +30,37 @@ log = logging.getLogger("red.githubcards.core")
 """
 
 
+class OverflowButton(discord.ui.Button):
+    def __init__(self, embeds: list):
+        super().__init__(
+            style=discord.ButtonStyle.primary,
+            label="See all linked issues"
+        ),
+        self.embeds = embeds
+
+    async def callback(self, interaction: discord.Interaction):
+        issue_embeds = []
+        overflow = []
+        for index, issue in enumerate(self.embeds):
+            if index < 8:
+                issue_embeds.append(issue)
+                continue
+            else:
+                overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
+                overflow_embed = discord.Embed(description=" • ".join(overflow))
+                issue_embeds.append(overflow_embed)
+        await interaction.response.send_message(
+            embeds=issue_embeds,
+            ephemeral=True
+        )
+
+
+class OverflowView(discord.ui.View):
+    def __init__(self, embeds: list):
+        super().__init__()
+        self.add_item(OverflowButton(embeds))
+
+
 class GitHubCards(commands.Cog):
     """GitHub Cards"""
     # Oh my god I'm doing it
@@ -292,18 +323,24 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         # --- SENDING ---
         issue_embeds = []
         overflow = []
+        overflow_embeds = []
 
         for index, issue in enumerate(issue_data_list):
-            if index < 2:
+            if index < 1:
                 e = Formatters.format_issue(issue)
                 issue_embeds.append(e)
                 continue
             else:
+                e = Formatters.format_issue(issue)
                 overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
+                overflow_embeds.append(e)
 
-        for embed in issue_embeds:
+        for index, embed in enumerate(issue_embeds):
             await message.channel.send(embed=embed)
         if len(overflow) != 0:
             embed = discord.Embed()
             embed.description = " • ".join(overflow)
-            await message.channel.send(embed=embed)
+            await message.channel.send(
+                embed=embed,
+                view=OverflowView(embeds=overflow_embeds)
+            )
