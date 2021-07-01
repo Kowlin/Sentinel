@@ -71,11 +71,12 @@ class OverflowPersistentSelect(discord.ui.Select):
         for item in self.values:
             self.cog.maybe_add_fetchable_issue(fetchable_repos, matcher, item)
 
-        await self.cog.query_and_post(
-            message=None,
-            fetchable_repos=fetchable_repos,
-            interaction_response=interaction.response
-        )
+        if fetchable_repos:
+            await self.cog.query_and_post(
+                message=None,
+                fetchable_repos=fetchable_repos,
+                interaction_response=interaction.response
+            )
 
 
 class OverflowPersistentView(discord.ui.View):
