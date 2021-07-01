@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from typing import Any, Dict, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 import discord
 from redbot.core import Config, checks, commands
@@ -34,14 +34,14 @@ log = logging.getLogger("red.githubcards.core")
 
 
 class OverflowButton(discord.ui.Button):
-    def __init__(self, embeds: list):
+    def __init__(self, embeds: List[discord.Embed]) -> None:
         super().__init__(
             style=discord.ButtonStyle.primary,
-            label="See all linked issues"
+            label="See all linked issues",
         ),
         self.embeds = embeds
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
         issue_embeds = []
         overflow = []
         for index, issue in enumerate(self.embeds):
@@ -59,11 +59,15 @@ class OverflowButton(discord.ui.Button):
 
 
 class OverflowPersistentSelect(discord.ui.Select):
-    def __init__(self, *, cog: GitHubCards, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, cog: GitHubCards, options: List[discord.SelectOption]) -> None:
+        super().__init__(
+            custom_id=f"kowlin/sentinel-{cog.bot.user.id}",
+            placeholder="Show issue",
+            options=options,
+        )
         self.cog = cog
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
         fetchable_repos = {}
         if (matcher := self.cog.get_matcher_by_message(interaction.message)) is None:
             return fetchable_repos
@@ -75,7 +79,7 @@ class OverflowPersistentSelect(discord.ui.Select):
             await self.cog.query_and_post(
                 message=None,
                 fetchable_repos=fetchable_repos,
-                interaction_response=interaction.response
+                interaction_response=interaction.response,
             )
 
 
@@ -84,21 +88,35 @@ class OverflowPersistentView(discord.ui.View):
         self,
         *,
         cog: GitHubCards,
-        options: list = discord.utils.MISSING,
+        # We *could* not use the unsupported discord.utils.MISSING,
+        # but we would have to add 3 lines (!) below.
+        # By not adding those lines, I'm trying to prove a point :P
+        # Arguably I'm failing at it because this comment already takes 4 lines
+        # which is more than I would have to write if I just gave in.
+        # And wow, it's 6 lines now!
+        #
+        # Anyway, if there were more than just one kwarg that needs this
+        # then the options are:
+        # - using **kwargs dictionary (works poorly with typing)
+        # - using a waterfall of ifs (number of permutations grows fast)
+        #
+        # Looks like I ended with 13 lines! How unlucky...
+        options: List[discord.SelectOption] = discord.utils.MISSING,
         timeout: Optional[float] = None,
     ):
         super().__init__(timeout=timeout)
-        persistent_select = OverflowPersistentSelect(
-            cog=cog,
-            custom_id=f"kowlin/sentinel-{cog.bot.user.id}",
-            placeholder="Show issue",
-            options=options,
-        )
+        persistent_select = OverflowPersistentSelect(cog=cog, options=options)
         self.add_item(persistent_select)
 
 
 class OverflowView(OverflowPersistentView):
-    def __init__(self, *, cog: GitHubCards, options: list, embeds: list):
+    def __init__(
+        self,
+        *,
+        cog: GitHubCards,
+        options: List[discord.SelectOption],
+        embeds: List[discord.Embed],
+    ) -> None:
         super().__init__(cog=cog, options=options, timeout=180.0)
         self.message: Optional[discord.Message] = None
         self.button = OverflowButton(embeds)
@@ -402,11 +420,7 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                 overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
                 prefix = fetchable_repos[tuple(issue.name_with_owner.split("/"))]["prefix"]
                 # TODO: account for the Select option and char limit
-                overflow_options.append(
-                    discord.SelectOption(
-                        label=f"{prefix}#{issue.number}", value=f"{prefix}#{issue.number}"
-                    )
-                )
+                overflow_options.append(discord.SelectOption(label=f"{prefix}#{issue.number}"))
                 overflow_embeds.append(e)
 
         if interaction_response is not None:
