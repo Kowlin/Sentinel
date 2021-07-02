@@ -435,10 +435,14 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         if interaction_response is not None:
             await interaction_response.send_message(embeds=issue_embeds, ephemeral=True)
             return
-        for index, embed in enumerate(issue_embeds):
-            await message.channel.send(embed=embed)
+
+        view = None
         if overflow:
             embed = discord.Embed()
             embed.description = " • ".join(overflow)
             view = OverflowView(cog=self, embeds=overflow_embeds, options=overflow_options)
-            view.message = await message.channel.send(embed=embed, view=view)
+            issue_embeds.append(embed)
+
+        new_message = await message.channel.send(embeds=issue_embeds, view=view)
+        if overflow:
+            view.message = new_message
