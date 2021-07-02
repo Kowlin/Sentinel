@@ -420,7 +420,16 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                 overflow.append(f"[{issue.name_with_owner}#{issue.number}]({issue.url})")
                 prefix = fetchable_repos[tuple(issue.name_with_owner.split("/"))]["prefix"]
                 # TODO: account for the Select option and char limit
-                overflow_options.append(discord.SelectOption(label=f"{prefix}#{issue.number}"))
+                overflow_options.append(
+                    discord.SelectOption(
+                        label=f"{prefix}#{issue.number}",
+                        description=(
+                            issue.title[:49] + "\N{HORIZONTAL ELLIPSIS}"
+                            if len(issue.title) > 50
+                            else issue.title
+                        ),
+                    )
+                )
                 overflow_embeds.append(e)
 
         if interaction_response is not None:
