@@ -38,7 +38,7 @@ class OverflowButton(discord.ui.Button):
         super().__init__(
             style=discord.ButtonStyle.secondary,
             label="See all linked issues",
-        ),
+        )
         self.embeds = embeds
 
     async def callback(self, interaction: discord.Interaction) -> None:
