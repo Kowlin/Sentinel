@@ -36,7 +36,7 @@ log = logging.getLogger("red.githubcards.core")
 class OverflowButton(discord.ui.Button):
     def __init__(self, embeds: List[discord.Embed]) -> None:
         super().__init__(
-            style=discord.ButtonStyle.primary,
+            style=discord.ButtonStyle.secondary,
             label="See all linked issues",
         ),
         self.embeds = embeds
