@@ -88,19 +88,6 @@ class OverflowPersistentView(discord.ui.View):
         self,
         *,
         cog: GitHubCards,
-        # We *could* not use the unsupported discord.utils.MISSING,
-        # but we would have to add 3 lines (!) below.
-        # By not adding those lines, I'm trying to prove a point :P
-        # Arguably I'm failing at it because this comment already takes 4 lines
-        # which is more than I would have to write if I just gave in.
-        # And wow, it's 6 lines now!
-        #
-        # Anyway, if there were more than just one kwarg that needs this
-        # then the options are:
-        # - using **kwargs dictionary (works poorly with typing)
-        # - using a waterfall of ifs (number of permutations grows fast)
-        #
-        # Looks like I ended with 13 lines! How unlucky...
         options: List[discord.SelectOption] = discord.utils.MISSING,
         timeout: Optional[float] = None,
     ):
