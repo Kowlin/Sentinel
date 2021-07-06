@@ -4,6 +4,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
+from typing import Union
 import discord
 
 from redbot.core import commands
@@ -25,7 +26,12 @@ class Massmove(BaseCog):
 
     @checks.mod_or_permissions(move_members=True)
     @commands.group(autohelp=False, invoke_without_command=True)
-    async def massmove(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
+    async def massmove(
+        self,
+        ctx,
+        channel_from: Union[discord.VoiceChannel, discord.StageChannel],
+        channel_to: Union[discord.VoiceChannel, discord.StageChannel]
+    ):
         """Massmove members from one channel to another.
 
         This works the best if you enable Developer mode and copy the ID's for the channels.
@@ -37,7 +43,7 @@ class Massmove(BaseCog):
 
     @checks.mod_or_permissions(move_members=True)
     @massmove.command()
-    async def afk(self, ctx, channel_from: discord.VoiceChannel):
+    async def afk(self, ctx, channel_from: Union[discord.VoiceChannel, discord.StageChannel]):
         """Massmove members to the AFK channel
 
         This works the best if you enable Developer mode and copy the ID for the channel
@@ -45,6 +51,17 @@ class Massmove(BaseCog):
         `channel_from`: The channel members will get moved from
         """
         await self.move_all_members(ctx, channel_from, ctx.guild.afk_channel)
+
+    @checks.mod_or_permissions(move_members=True)
+    @massmove.command()
+    async def me(self, ctx, channel_to: Union[discord.VoiceChannel, discord.StageChannel]):
+        """Massmove members to the AFK channel
+
+        This works the best if you enable Developer mode and copy the ID for the channel
+
+        `channel_from`: The channel members will get moved from
+        """
+        await self.move_all_members(ctx, ctx.author.voice.channel, channel_to)
 
     async def move_all_members(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
         member_amount = len(channel_from.members)
