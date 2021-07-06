@@ -25,11 +25,7 @@ class Massmove(BaseCog):
         return
 
     @checks.mod_or_permissions(move_members=True)
-    @commands.group(
-        autohelp=False,
-        invoke_without_command=True,
-        usage="<from channel> <to channel>"
-    )
+    @commands.group(autohelp=False, invoke_without_command=True)
     async def massmove(
         self,
         ctx,
@@ -40,44 +36,37 @@ class Massmove(BaseCog):
 
         This works the best if you enable Developer mode and copy the ID's for the channels.
 
-        `from channel`: The channel members will get moved from
-        `to channel`: The channel members will get moved to
+        `channel_from`: The channel members will get moved from
+        `channel_to`: The channel members will get moved to
         """
         await self.move_all_members(ctx, channel_from, channel_to)
 
     @checks.mod_or_permissions(move_members=True)
-    @massmove.command(
-        usage="<from channel>"
-    )
+    @massmove.command()
     async def afk(self, ctx, channel_from: Union[discord.VoiceChannel, discord.StageChannel]):
         """Massmove members to the AFK channel
 
         This works the best if you enable Developer mode and copy the ID for the channel
 
-        `from channel`: The channel members will get moved from
+        `channel_from`: The channel members will get moved from
         """
         await self.move_all_members(ctx, channel_from, ctx.guild.afk_channel)
 
     @checks.mod_or_permissions(move_members=True)
-    @massmove.command(
-        usage="<to channel>"
-    )
+    @massmove.command()
     async def me(self, ctx, channel_to: Union[discord.VoiceChannel, discord.StageChannel]):
-        """Massmove you and every other member in the channel to another channel.
+        """Massmove members to the AFK channel
 
         This works the best if you enable Developer mode and copy the ID for the channel
 
-        `to channel`: The channel members will get moved to
+        `channel_from`: The channel members will get moved from
         """
         await self.move_all_members(ctx, ctx.author.voice.channel, channel_to)
 
     async def move_all_members(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
-        plural = True
         member_amount = len(channel_from.members)
         if member_amount == 0:
             return await ctx.send(f"{channel_from.name} doesn't have any members in it.")
-        elif member_amount == 1:
-            plural = False
         # Check permissions to ensure a smooth transisition
         if channel_from.permissions_for(ctx.guild.me).move_members is False:
             return await ctx.send(f"I don't have permissions to move members in {channel_from.name}")
@@ -90,6 +79,4 @@ class Massmove(BaseCog):
                 await member.move_to(channel_to)
             except:
                 pass
-        await ctx.send(
-            f"Done, massmoved {member_amount} member{'s' if plural else ''} from **{channel_from.name}** to **{channel_to.name}**"
-        )
+        await ctx.send(f"Done, massmoved {member_amount} members from **{channel_from.name}** to **{channel_to.name}**")
