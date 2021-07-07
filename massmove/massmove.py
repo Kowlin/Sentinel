@@ -69,20 +69,23 @@ class Massmove(BaseCog):
 
         `to channel`: The channel members will get moved to
         """
-        await self.move_all_members(ctx, ctx.author.voice.channel, channel_to)
+        voice = ctx.author.voice
+        if voice is None:
+            return await ctx.send("You have to be in an voice channel to use this command.")
+        await self.move_all_members(ctx, voice.channel, channel_to)
 
     async def move_all_members(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
         plural = True
         member_amount = len(channel_from.members)
         if member_amount == 0:
-            return await ctx.send(f"{channel_from.name} doesn't have any members in it.")
+            return await ctx.send(f"{channel_from.mention} doesn't have any members in it.")
         elif member_amount == 1:
             plural = False
         # Check permissions to ensure a smooth transisition
         if channel_from.permissions_for(ctx.guild.me).move_members is False:
-            return await ctx.send(f"I don't have permissions to move members in {channel_from.name}")
+            return await ctx.send(f"I don't have permissions to move members in {channel_from.mention}")
         if channel_to.permissions_for(ctx.guild.me).move_members is False:
-            return await ctx.send(f"I don't have permissions to move members in {channel_to.name}")
+            return await ctx.send(f"I don't have permissions to move members in {channel_to.mention}")
         # Move the members
         """Internal function for massmoving, massmoves all members to the target channel"""
         for member in channel_from.members:
@@ -91,5 +94,5 @@ class Massmove(BaseCog):
             except:
                 pass
         await ctx.send(
-            f"Done, massmoved {member_amount} member{'s' if plural else ''} from **{channel_from.name}** to **{channel_to.name}**"
+            f"Done, massmoved {member_amount} member{'s' if plural else ''} from **{channel_from.mention}** to **{channel_to.mention}**"
         )
