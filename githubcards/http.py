@@ -4,7 +4,11 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
+from __future__ import annotations
+
+import datetime
 import logging
+from typing import Any, Callable, Dict, Mapping, Optional
 
 import aiohttp
 
@@ -14,6 +18,41 @@ from .exceptions import ApiError, Unauthorized
 
 baseUrl = "https://api.github.com/graphql"
 log = logging.getLogger("red.githubcards.http")
+
+
+class RateLimit:
+    """
+    This is somewhat similar to what's in gidgethub.
+
+    We really should just use that lib already...
+    """
+
+    def __init__(self, *, limit: int, remaining: int, reset: float, cost: Optional[int]) -> None:
+        self.limit = limit
+        self.remaining = remaining
+        self.reset = reset
+        self.cost = cost
+
+    @classmethod
+    def from_http(
+        cls, headers: Mapping[str, Any], ratelimit_data: Mapping[str, Any]
+    ) -> Optional[RateLimit]:
+        try:
+            limit = int(headers["x-ratelimit-limit"])
+            remaining = int(headers["x-ratelimit-remaining"])
+            reset = datetime.datetime.fromtimestamp(
+                float(headers["x-ratelimit-reset"]), datetime.timezone.utc
+            )
+        except KeyError:
+            try:
+                limit = ratelimit_data["limit"]
+                remaining = ratelimit_data["remaining"]
+                reset = datetime.strptime(ratelimit_data["resetAt"], '%Y-%m-%dT%H:%M:%SZ')
+            except KeyError:
+                return None
+        else:
+            cost = ratelimit_data.get("cost")
+            return cls(limit=limit, remaining=remaining, reset=reset, cost=cost)
 
 
 class GitHubAPI:
@@ -42,8 +81,9 @@ class GitHubAPI:
                 raise Unauthorized(json["message"])
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
-            ratelimit = json['data']['rateLimit']
-            log.debug(f"validate_user; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
+            self._log_ratelimit(
+                self.validate_user, call.headers, ratelimit_data=json['data']['rateLimit']
+            )
             return json
 
     async def validate_repo(self, repoOwner: str, repoName: str):
@@ -59,8 +99,9 @@ class GitHubAPI:
                 raise Unauthorized(json["message"])
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
-            ratelimit = json['data']['rateLimit']
-            log.debug(f"validate_repo; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
+            self._log_ratelimit(
+                self.validate_repo, call.headers, ratelimit_data=json['data']['rateLimit']
+            )
             return json
 
     async def search_issues(self, repoOwner: str, repoName: str, searchParam: str):
@@ -75,9 +116,10 @@ class GitHubAPI:
             json = await call.json()
             if "errors" in json.keys():
                 raise ApiError(json['errors'])
-            ratelimit = json['data']['rateLimit']
+            self._log_ratelimit(
+                self.search_issues, call.headers, ratelimit_data=json['data']['rateLimit']
+            )
             search_results = json['data']['search']
-            log.debug(f"search_issues; cost {ratelimit['cost']}, remaining; {ratelimit['remaining']}/{ratelimit['limit']}")
 
             data = SearchData(
                 total=search_results['issueCount'],
@@ -94,5 +136,24 @@ class GitHubAPI:
             }
         ) as call:
             json = await call.json()
-            log.debug(f"send_query; no RL data")
+            self._log_ratelimit(self.send_query, call.headers)
             return json
+
+    def _log_ratelimit(
+        self,
+        func: Callable[[...], Any],
+        headers: Mapping[str, Any],
+        *,
+        ratelimit_data: Dict[str, Any] = {},
+    ) -> None:
+        ratelimit = RateLimit.from_http(headers, ratelimit_data)
+        if ratelimit is not None:
+            log.debug(
+                "%s; cost %s, remaining: %s/%s",
+                func.__name__,
+                ratelimit.cost if ratelimit.cost is not None else "not provided",
+                ratelimit.remaining,
+                ratelimit.limit,
+            )
+        else:
+            log.debug("%s; no RL data", func.__name__)

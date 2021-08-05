@@ -20,6 +20,7 @@ class Queries:
                 cost
                 remaining
                 limit
+                resetAt
             }
         }"""
 
@@ -33,6 +34,7 @@ class Queries:
                 cost
                 remaining
                 limit
+                resetAt
             }
         }"""
 
@@ -124,6 +126,7 @@ class Queries:
                 cost
                 remaining
                 limit
+                resetAt
             }
         }"""
 
