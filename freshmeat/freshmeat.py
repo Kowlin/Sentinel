@@ -42,7 +42,10 @@ class Freshmeat(BaseCog):
 
         member_list = []
         for member in ctx.guild.members:
-            if member.joined_at > ctx.message.created_at - datetime.timedelta(hours=hours):
+            if (
+                member.joined_at is not None
+                and member.joined_at > (ctx.message.created_at - datetime.timedelta(hours=hours))
+            ):
                 member_list.append([member.display_name, member.id, member.joined_at])
 
         member_list.sort(key=lambda member: member[2], reverse=True)
