@@ -75,6 +75,7 @@ class Massmove(BaseCog):
         await self.move_all_members(ctx, voice.channel, channel_to)
 
     async def move_all_members(self, ctx, channel_from: discord.VoiceChannel, channel_to: discord.VoiceChannel):
+        """Internal function for massmoving, massmoves all members to the target channel"""
         plural = True
         member_amount = len(channel_from.members)
         if member_amount == 0:
@@ -87,7 +88,6 @@ class Massmove(BaseCog):
         if channel_to.permissions_for(ctx.guild.me).move_members is False:
             return await ctx.send(f"I don't have permissions to move members in {channel_to.mention}")
         # Move the members
-        """Internal function for massmoving, massmoves all members to the target channel"""
         for member in channel_from.members:
             try:
                 await member.move_to(channel_to)
