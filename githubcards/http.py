@@ -70,6 +70,7 @@ class GitHubAPI:
             "Authorization": f"bearer {token}",
             "Content-Type": "application/json",
             "Accept": "application/vnd.github.shadow-cat-preview+json",
+            "User-Agent": "Py aiohttp - GitHubCards (github.com/Kowlin/sentinel)"
         }
         self._token = token
         self.session = aiohttp.ClientSession(headers=headers)

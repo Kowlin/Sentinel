@@ -29,7 +29,7 @@ class Formatters:
             issue['author'] = {
                 "login": "Ghost",
                 "url": "https://github.com/ghost",
-                "avatarUrl": "https://avatars2.githubusercontent.com/u/10137?u=b1951d34a583cf12ec0d3b0781ba19be97726318&v=4"
+                "avatarUrl": "https://avatars.githubusercontent.com/u/10137?v=4"
             }
         labels = tuple(label["name"] for label in issue["labels"]["nodes"])
 
