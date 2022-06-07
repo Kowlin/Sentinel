@@ -102,7 +102,7 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command_error",
-            message=f"command \"{ctx.command.name}\" failed for {ctx.author.name} ({ctx.author.id})",
+            message=f"command \"{ctx.command.qualified_name}\" failed for {ctx.author.name} ({ctx.author.id})",
             level="error"
         )
 
@@ -111,7 +111,7 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command",
-            message=f"command \"{ctx.command.name}\" ran for {ctx.author.name} ({ctx.author.id})",
+            message=f"command \"{ctx.command.qualified_name}\" ran for {ctx.author.name} ({ctx.author.id})",
             level="info"
         )
 
@@ -120,6 +120,6 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command_completion",
-            message=f"command \"{ctx.command.name}\" completed for {ctx.author.name} ({ctx.author.id})",
+            message=f"command \"{ctx.command.qualified_name}\" completed for {ctx.author.name} ({ctx.author.id})",
             level="info"
         )
