@@ -4,16 +4,14 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
-from typing import Union
 import discord
 
-from redbot.core import commands
-from redbot.core import checks
+from redbot.core import commands, checks
 
-BaseCog = getattr(commands, "Cog", object)
+from typing import Union
 
 
-class Massmove(BaseCog):
+class Massmove(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
@@ -38,10 +36,11 @@ class Massmove(BaseCog):
     ):
         """Massmove members from one channel to another.
 
-        This works the best if you enable Developer mode and copy the ID's for the channels.
+        To grab the channel easily, mention it with `#!`.
 
-        `from channel`: The channel members will get moved from
-        `to channel`: The channel members will get moved to
+        Arguments:
+            - `from channel`: The channel members will get moved from
+            - `to channel`: The channel members will get moved to
         """
         await self.move_all_members(ctx, channel_from, channel_to)
 
@@ -52,9 +51,10 @@ class Massmove(BaseCog):
     async def afk(self, ctx, channel_from: Union[discord.VoiceChannel, discord.StageChannel]):
         """Massmove members to the AFK channel
 
-        This works the best if you enable Developer mode and copy the ID for the channel
+        To grab the channel easily, mention it with ``#!``.
 
-        `from channel`: The channel members will get moved from
+        Arguments:
+            - `from channel`: The channel members will get moved from
         """
         await self.move_all_members(ctx, channel_from, ctx.guild.afk_channel)
 
@@ -63,11 +63,12 @@ class Massmove(BaseCog):
         usage="<to channel>"
     )
     async def me(self, ctx, channel_to: Union[discord.VoiceChannel, discord.StageChannel]):
-        """Massmove you and every other member in the channel to another channel.
+        """Massmove you and every other member to another channel.
 
-        This works the best if you enable Developer mode and copy the ID for the channel
+        To grab the channel easily, mention it with ``#!``.
 
-        `to channel`: The channel members will get moved to
+        Arguments:
+            - `to channel`: The channel members will get moved to
         """
         voice = ctx.author.voice
         if voice is None:
@@ -84,9 +85,9 @@ class Massmove(BaseCog):
             plural = False
         # Check permissions to ensure a smooth transisition
         if channel_from.permissions_for(ctx.guild.me).move_members is False:
-            return await ctx.send(f"I don't have permissions to move members in {channel_from.mention}")
+            return await ctx.send(f"I don't have permissions to move members in {channel_from.mention}.")
         if channel_to.permissions_for(ctx.guild.me).move_members is False:
-            return await ctx.send(f"I don't have permissions to move members in {channel_to.mention}")
+            return await ctx.send(f"I don't have permissions to move members in {channel_to.mention}.")
         # Move the members
         for member in channel_from.members:
             try:
@@ -94,5 +95,5 @@ class Massmove(BaseCog):
             except:
                 pass
         await ctx.send(
-            f"Done, massmoved {member_amount} member{'s' if plural else ''} from **{channel_from.mention}** to **{channel_to.mention}**"
+            f"Done, massmoved {member_amount} member{'s' if plural else ''} from **{channel_from.mention}** to **{channel_to.mention}**."
         )
