@@ -6,8 +6,7 @@
 
 import discord
 
-from redbot.core import commands
-from redbot.core import checks
+from redbot.core import commands, checks
 from redbot.core.utils.chat_formatting import pagify, escape
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
