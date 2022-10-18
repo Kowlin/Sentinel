@@ -274,8 +274,8 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
         query = Query.build_query(fetchable_repos)
         try:
             query_data = await self.http.send_query(query.query_string)
-        except Unauthorized:
-            log.error("The current GitHub token is invalid.")
+        except Unauthorized as e:
+            log.error(e)
             return
             # Lmao what's error handling
 

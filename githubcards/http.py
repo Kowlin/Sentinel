@@ -138,6 +138,8 @@ class GitHubAPI:
         ) as call:
             json = await call.json()
             self._log_ratelimit(self.send_query, call.headers)
+            if call.status == 401:
+                raise Unauthorized(json["message"])
             return json
 
     def _log_ratelimit(
