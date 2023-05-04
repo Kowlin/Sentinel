@@ -7,5 +7,6 @@
     "short": "Massmove members out of voice channels.",
     "tags": ["moderation","massmove","voice","voicemoderation"],
     "type": "COG",
-    "install_msg": "Thanks for installing massmove, Don't forget that ``[P]help Massmove`` is your friend!"
+    "install_msg": "Thanks for installing massmove, Don't forget that ``[P]help Massmove`` is your friend!",
+    "min_bot_version": "3.5.1"
   }

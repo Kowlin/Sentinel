@@ -9,5 +9,6 @@
     "short": "Check out the latest bunch of members with Freshmeat",
     "tags": ["moderation","members"],
     "type": "COG",
-    "install_msg": "Thanks for installing freshmeat, Don't forget that ``[P]help Freshmeat`` is your friend!"
+    "install_msg": "Thanks for installing freshmeat, Don't forget that ``[P]help Freshmeat`` is your friend!",
+    "min_bot_version": "3.5.1"
   }
