@@ -5,6 +5,7 @@ import discord
 import sentry_sdk
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import inline
+from redbot.core.utils.views import SetApiView
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk import add_breadcrumb
@@ -18,7 +19,7 @@ class SentryIO(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         self.init_sentry(await self._get_dsn())
 
     def cog_unload(self) -> None:
@@ -62,11 +63,6 @@ class SentryIO(commands.Cog):
         if client is not None:
             client.close()
 
-    @checks.is_owner()
-    @commands.command()
-    async def plzerror(self, ctx):
-        raise Exception
-
     @commands.group(name="sentryio")
     @checks.is_owner()
     async def sentry_group(self, ctx):
@@ -83,9 +79,12 @@ class SentryIO(commands.Cog):
             "1. Go to Settings page of your Sentry Account at <https://sentry.io/settings>\n"
             "2. Go to Projects list and select the project you want to use for this bot.\n"
             "3. Select Client Keys (DSN) menu entry at the left.\n"
-            "4. Copy your DSN and go to your DMs with the bot, and run the following command:\n"
-        ) + inline(f"{ctx.clean_prefix}set api sentry dsn [YOUR NEW TOKEN]")
-        await ctx.send(message)
+            "4. Copy your DSN and click the button below to set your DSN."
+        )
+        await ctx.send(
+            message,
+            view=SetApiView(default_service="sentry", default_keys={"dsn": ""}),
+        )
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(

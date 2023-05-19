@@ -6,8 +6,9 @@
     "install_msg": "I'm sorry that you installed this cog, hopefully it won't brick your shit.",
     "author": [
         "Kowlin (Kowlin#2536)",
-        "jack1142 (Jackenmen#6607)"
+        "Jakub Kuczys (https://github.com/Jackenmen)"
     ],
+    "min_bot_version": "3.5.0",
     "required_cogs": {},
     "requirements": [
         "sentry-sdk"
