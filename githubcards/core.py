@@ -256,12 +256,12 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
                     "owner": prefix_data["owner"],
                     "repo": prefix_data["repo"],
                     "prefix": prefix,
-                    "fetchable_issues": set()
+                    "fetchable_issues": {},  # using dict instead of a set since it's ordered
                 }
             # No need to post card for same issue number from the same repo in one message twice
             if number in fetchable_repos[name_with_owner]['fetchable_issues']:
                 continue
-            fetchable_repos[name_with_owner]['fetchable_issues'].add(number)
+            fetchable_repos[name_with_owner]['fetchable_issues'][number] = None
 
         if len(fetchable_repos) == 0:
             return  # End if no repos are found to query over.

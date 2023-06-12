@@ -8,7 +8,7 @@ import discord
 from redbot.core.utils.chat_formatting import pagify
 
 from datetime import datetime
-from typing import Dict, List, Set, TypedDict
+from typing import Dict, List, TypedDict
 
 from .data import IssueData, SearchData, IssueStateColour
 from .calls import Queries
@@ -137,7 +137,7 @@ class FetchableReposDict(TypedDict):
     owner: str
     repo: str
     prefix: str
-    fetchable_issues: Set[int]
+    fetchable_issues: Dict[int, None]
 
 
 class Query:
