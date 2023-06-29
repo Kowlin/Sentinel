@@ -3,9 +3,11 @@ from typing import Mapping, Optional
 
 import discord
 import sentry_sdk
+
 from redbot.core import checks, commands
 from redbot.core.utils.chat_formatting import inline
 from redbot.core.utils.views import SetApiView
+
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk import add_breadcrumb
@@ -38,7 +40,7 @@ class SentryIO(commands.Cog):
         if api_tokens is None:
             api_tokens = await self.bot.get_shared_api_tokens("sentry")
 
-        dsn = api_tokens.get("dsn", "")
+        dsn = api_tokens.get("dsn", "")  # type: ignore
         if not dsn:
             log.error("No valid DSN found")
         return dsn
@@ -63,7 +65,7 @@ class SentryIO(commands.Cog):
         if client is not None:
             client.close()
 
-    @commands.group(name="sentryio")
+    @commands.group(name="sentryio")  # type: ignore
     @checks.is_owner()
     async def sentry_group(self, ctx):
         """Configure Sentry.IO stuffies"""  # TODO
