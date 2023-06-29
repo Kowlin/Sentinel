@@ -1,0 +1,25 @@
+{
+    "name": "SentryIO",
+    "short": "Sentry.IO integration for Red-DiscordBot",
+    "description": "Sentry.IO integration for Red-DiscordBot. Automatically sends your pesky errors to Sentry.IO for analysis.",
+    "end_user_data_statement": "This cog does not record end user data.",
+    "install_msg": "",
+    "author": [
+        "Kowlin (@Kowlin)",
+        "Jakub Kuczys (https://github.com/Jackenmen)"
+    ],
+    "min_bot_version": "3.5.0",
+    "required_cogs": {},
+    "requirements": [
+        "sentry-sdk"
+    ],
+    "tags": [
+        "api",
+        "logging",
+        "sentry",
+        "sentryio"
+    ],
+    "hidden": false,
+    "disabled": false,
+    "type": "COG"
+}
