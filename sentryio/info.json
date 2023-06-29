@@ -1,11 +1,11 @@
 {
     "name": "SentryIO",
-    "short": "This does something cool.",
-    "description": "Veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery cool description.",
-    "end_user_data_statement": "This cog steals your data and uploads it to Sentry.IO GLHF **I swear if I don't change this**",
-    "install_msg": "I'm sorry that you installed this cog, hopefully it won't brick your shit.",
+    "short": "Sentry.IO integration for Red-DiscordBot",
+    "description": "Sentry.IO integration for Red-DiscordBot. Automatically sends your pesky errors to Sentry.IO for analysis.",
+    "end_user_data_statement": "This cog does not record end user data.",
+    "install_msg": "",
     "author": [
-        "Kowlin (Kowlin#2536)",
+        "Kowlin (@Kowlin)",
         "Jakub Kuczys (https://github.com/Jackenmen)"
     ],
     "min_bot_version": "3.5.0",
