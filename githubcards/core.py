@@ -95,6 +95,31 @@ class GitHubCards(commands.Cog):
         """Create GitHub API client."""
         self.http = GitHubAPI(token=await self._get_token())
 
+    async def _add_card(self, guild: discord.Guild, prefix: str, owner: str, repo: str) -> str:
+        """Adds new cards to the guild
+        """
+        try:
+            await self.http.validate_repo(owner, repo)
+        except ApiError:
+            return 'The provided GitHub repository doesn\'t exist, or is unable to be accessed due to permissions.'
+
+        async with self.config.custom("REPO", guild.id).all() as repos:
+            if prefix in repos.keys():
+                return 'This prefix already exists in this server. Please use something else.'
+
+            repos[prefix] = {"owner": owner, "repo": repo}
+
+        await self.rebuild_cache_for_guild(guild.id)
+        return f"A GitHub repository (``{owner}/{repo}``) added with a prefix ``{prefix}``"
+
+    async def _remove_card(self, guild: discord.Guild, prefix: str) -> str:
+        """Removes a card from the guild
+        """
+        await self.config.custom("REPO", guild.id, prefix).clear()
+        await self.rebuild_cache_for_guild(guild.id)
+
+        return f"A repository with the prefix ``{prefix}`` has been removed."
+
     @commands.guild_only()
     @commands.command(usage="<prefix> <search_query>")
     async def ghsearch(self, ctx, repo_data: RepoData, *, search_query: str):
@@ -128,31 +153,17 @@ class GitHubCards(commands.Cog):
             await ctx.send('Invalid format. Please use ``Username/Repository``.')
             return
 
-        try:
-            await self.http.validate_repo(owner, repo)
-        except ApiError:
-            await ctx.send('The provided GitHub repository doesn\'t exist, or is unable to be accessed due to permissions.')
-            return
+        msg = await self._add_card(guild=ctx.guild, prefix=prefix, owner=owner, repo=repo)
 
-        async with self.config.custom("REPO", ctx.guild.id).all() as repos:
-            if prefix in repos.keys():
-                await ctx.send('This prefix already exists in this server. Please use something else.')
-                return
-
-            repos[prefix] = {"owner": owner, "repo": repo}
-
-        await self.rebuild_cache_for_guild(ctx.guild.id)
-        await ctx.send(f"A GitHub repository (``{github_slug}``) added with a prefix ``{prefix}``")
+        await ctx.send(msg)
 
     @ghc_group.command(name="remove", aliases=["delete"])
     async def remove(self, ctx, prefix: str):
         """Remove a GitHub repository with its given prefix.
         """
-        await self.config.custom("REPO", ctx.guild.id, prefix).clear()
-        await self.rebuild_cache_for_guild(ctx.guild.id)
+        msg = await self._remove_card(guild=ctx.guild, prefix=prefix)
 
-        # if that prefix doesn't exist, it will still send same message but I don't care
-        await ctx.send(f"A repository with the prefix ``{prefix}`` has been removed.")
+        await ctx.send(msg)
 
     @ghc_group.command(name="list")
     async def list_prefixes(self, ctx):
@@ -268,6 +279,38 @@ Finally reload the cog with ``[p]reload githubcards`` and you're set to add in n
 
         async with message.channel.typing():
             await self._query_and_post(message, fetchable_repos)
+
+    @commands.Cog.listener()
+    async def on_kowlin_ghc_add(self, *, guild: discord.Guild, owner: str, repo: str, prefix:str, **_kwargs: Any):
+        """Sets up listener for new repos
+
+        Can be dispatch like
+        self.bot.dispatch(
+            "kowlin_ghc_add",
+            guild=ctx.guild,
+            owner="Kowlin"
+            repo="Sentinel",
+            prefix="Sentinel"
+        )
+        """
+        msg = await self._add_card(guild=guild, prefix=prefix, owner=owner, repo=repo)
+
+        log.info(msg)
+
+    @commands.Cog.listener()
+    async def on_kowlin_ghc_remove(self, *, guild: discord.Guild, prefix:str, **_kwargs: Any):
+        """Sets up listener for removal of repos
+
+        Can be dispatch like
+        self.bot.dispatch(
+            "kowlin_ghc_remove",
+            guild=ctx.guild,
+            prefix="Sentinel"
+        )
+        """
+        msg = await self._remove_card(guild=guild, prefix=prefix)
+
+        log.info(msg)
 
     async def _query_and_post(self, message, fetchable_repos):
         # --- FETCHING ---
