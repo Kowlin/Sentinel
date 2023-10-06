@@ -11,6 +11,8 @@ from typing import Any, Dict, Mapping, Optional
 
 import discord
 from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.views import SimpleMenu
 
 from .converters import RepoData
 from .exceptions import ApiError, Unauthorized
@@ -174,9 +176,17 @@ class GitHubCards(commands.Cog):
             await ctx.send("There are no configured GitHub repositories on this server.")
             return
         msg = "\n".join(
-            f"``{prefix}``: ``{repo['owner']}/{repo['repo']}``" for prefix, repo in repos.items()
+            f"``{prefix}``: ``{repo['owner']}/{repo['repo']}``" for prefix, repo in sorted(repos.items())
         )
-        await ctx.send(f"List of configured prefixes on **{ctx.guild.name}** server:\n{msg}")
+
+        pages = pagify(msg, delims=("\n"))
+        pages = [{"embed": discord.Embed(description=page, title=f"List of configured prefixes on **{ctx.guild.name}** server:")} for page in pages]
+
+        if len(pages) == 1:
+            await ctx.send(**pages[0])
+        else:
+            selectMenu = len(pages) >= 5 <= 25
+            await SimpleMenu(pages, use_select_menu=selectMenu, use_select_only=selectMenu).start(ctx)
 
     @ghc_group.command(name="instructions")
     async def instructions(self, ctx):
