@@ -57,7 +57,7 @@ class Freshmeat(BaseCog):
             embed = discord.Embed(description=page)
             embed.set_author(
                 name=f"{ctx.author.display_name}'s freshmeat of the day.",
-                icon_url=ctx.author.avatar_url_as(format="png")
+                icon_url=ctx.author.display_avatar,
             )
             pages.append(embed)
 
