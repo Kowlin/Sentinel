@@ -100,27 +100,79 @@ class SentryIO(commands.Cog):
     async def on_command_error(self, ctx, error):
         if not ctx.command:
             return
+        
+        crum_data = {
+            "command_name": ctx.command.qualified_name,
+            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
+            "author_id": ctx.author.id,
+            "guild_id": ctx.guild.id if ctx.guild else "None",
+            "channel_id": ctx.channel.id,
+        }
+        for comm_arg, value in ctx.kwargs:
+            crum_data[f"command_arg_{comm_arg}"] = value
+
         add_breadcrumb(
             type="user",
             category="on_command_error",
-            message=f"command \"{ctx.command.qualified_name}\" failed for {ctx.author.name} ({ctx.author.id})",
-            level="error"
+            message=f"Command \"{ctx.command.qualified_name}\" failed for {ctx.author.name} ({ctx.author.id})",
+            level="error",
+            data=crum_data,
         )
 
     @commands.Cog.listener()
     async def on_command(self, ctx):
+        crum_data = {
+            "command_name": ctx.command.qualified_name,
+            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
+            "author_id": ctx.author.id,
+            "guild_id": ctx.guild.id if ctx.guild else "None",
+            "channel_id": ctx.channel.id,
+        }
+        for comm_arg, value in ctx.kwargs:
+            crum_data[f"command_arg_{comm_arg}"] = value
+
         add_breadcrumb(
             type="user",
             category="on_command",
-            message=f"command \"{ctx.command.qualified_name}\" ran for {ctx.author.name} ({ctx.author.id})",
-            level="info"
+            message=f"Command \"{ctx.command.qualified_name}\" ran for {ctx.author.name} ({ctx.author.id})",
+            level="info",
+            data=crum_data,
         )
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
+        crum_data = {
+            "command_name": ctx.command.qualified_name,
+            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
+            "author_id": ctx.author.id,
+            "guild_id": ctx.guild.id if ctx.guild else "None",
+            "channel_id": ctx.channel.id,
+        }
+        for comm_arg, value in ctx.kwargs:
+            crum_data[f"command_arg_{comm_arg}"] = value
+
         add_breadcrumb(
             type="user",
             category="on_command_completion",
-            message=f"command \"{ctx.command.qualified_name}\" completed for {ctx.author.name} ({ctx.author.id})",
-            level="info"
+            message=f"Command \"{ctx.command.qualified_name}\" completed for {ctx.author.name} ({ctx.author.id})",
+            level="info",
+            data=crum_data,
+        )
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        crum_data = {
+            "interaction_id": interaction.id,
+            "channel_id": interaction.channel_id,
+            "guild_id": interaction.guild_id,
+            "user_id": interaction.user.id,
+            "message_id": interaction.message.id if interaction.message is not None else None,
+        }
+
+        add_breadcrumb(
+            type="user",
+            category="on_interaction",
+            message=f"Interaction \"{interaction.id}\" ran for {interaction.user.name} ({interaction.user.id})",
+            level="info",
+            data=crum_data,
         )
