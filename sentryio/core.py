@@ -108,7 +108,7 @@ class SentryIO(commands.Cog):
             "guild_id": ctx.guild.id if ctx.guild else "None",
             "channel_id": ctx.channel.id,
         }
-        for comm_arg, value in ctx.kwargs:
+        for comm_arg, value in ctx.kwargs.items():
             crum_data[f"command_arg_{comm_arg}"] = value
 
         add_breadcrumb(
@@ -128,7 +128,7 @@ class SentryIO(commands.Cog):
             "guild_id": ctx.guild.id if ctx.guild else "None",
             "channel_id": ctx.channel.id,
         }
-        for comm_arg, value in ctx.kwargs:
+        for comm_arg, value in ctx.kwargs.items():
             crum_data[f"command_arg_{comm_arg}"] = value
 
         add_breadcrumb(
@@ -148,7 +148,7 @@ class SentryIO(commands.Cog):
             "guild_id": ctx.guild.id if ctx.guild else "None",
             "channel_id": ctx.channel.id,
         }
-        for comm_arg, value in ctx.kwargs:
+        for comm_arg, value in ctx.kwargs.items():
             crum_data[f"command_arg_{comm_arg}"] = value
 
         add_breadcrumb(
