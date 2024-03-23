@@ -3,14 +3,13 @@ from typing import Mapping, Optional
 
 import discord
 import sentry_sdk
-
 from redbot.core import checks, commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import inline
 from redbot.core.utils.views import SetApiView
-
+from sentry_sdk import add_breadcrumb
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk import add_breadcrumb
 
 log = logging.getLogger("red.sentinel.sentryio.core")
 
@@ -18,16 +17,14 @@ log = logging.getLogger("red.sentinel.sentryio.core")
 class SentryIO(commands.Cog):
     """Sentry.IO Logger integration"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red):
         self.bot = bot
 
     async def cog_load(self) -> None:
         self.init_sentry(await self._get_dsn())
 
     def cog_unload(self) -> None:
-        client = sentry_sdk.Hub.current.client
-        if client is not None:
-            client.close()
+        self.close_sentry()
 
     async def red_get_data_for_user(self, **kwargs):
         return {}
@@ -47,28 +44,40 @@ class SentryIO(commands.Cog):
 
     def init_sentry(self, dsn: str) -> None:
         self.close_sentry()
+        if not dsn:
+            return
+        log.info("Initializing Sentry with DSN: %s", dsn)
         sentry_sdk.init(
             dsn,
             traces_sample_rate=1.0,
             shutdown_timeout=0.1,
             integrations=[
                 AioHttpIntegration(),
-                LoggingIntegration(
-                    level=logging.INFO,
-                    event_level=logging.ERROR
-                )
-            ]
+                LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+            ],
         )
 
     def close_sentry(self) -> None:
         client = sentry_sdk.Hub.current.client
         if client is not None:
+            log.info("Closing Sentry client")
             client.close()
 
     @commands.group(name="sentryio")  # type: ignore
     @checks.is_owner()
     async def sentry_group(self, ctx):
         """Configure Sentry.IO stuffies"""  # TODO
+
+    @sentry_group.command(name="status")
+    async def status(self, ctx):
+        """Check the status of Sentry.IO integration."""
+        client = sentry_sdk.Hub.current.client
+        if client is None:
+            await ctx.send("Sentry.IO is not initialized.")
+            return
+        await ctx.send(
+            f"Sentry.IO is initialized with DSN: {inline(client.options['dsn'])}"
+        )
 
     @sentry_group.command(name="instructions")
     async def instructions(self, ctx):
@@ -83,9 +92,13 @@ class SentryIO(commands.Cog):
             "3. Select Client Keys (DSN) menu entry at the left.\n"
             "4. Copy your DSN and click the button below to set your DSN."
         )
+        api_tokens = await self.bot.get_shared_api_tokens("sentry")
         await ctx.send(
             message,
-            view=SetApiView(default_service="sentry", default_keys={"dsn": ""}),
+            view=SetApiView(
+                default_service="sentry",
+                default_keys={"dsn": api_tokens.get("dsn", "")},
+            ),
         )
 
     @commands.Cog.listener()
@@ -100,7 +113,7 @@ class SentryIO(commands.Cog):
     async def on_command_error(self, ctx, error):
         if not ctx.command:
             return
-        
+
         crum_data = {
             "command_name": ctx.command.qualified_name,
             "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
@@ -114,7 +127,7 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command_error",
-            message=f"Command \"{ctx.command.qualified_name}\" failed for {ctx.author.name} ({ctx.author.id})",
+            message=f'Command "{ctx.command.qualified_name}" failed for {ctx.author.name} ({ctx.author.id})',
             level="error",
             data=crum_data,
         )
@@ -134,7 +147,7 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command",
-            message=f"Command \"{ctx.command.qualified_name}\" ran for {ctx.author.name} ({ctx.author.id})",
+            message=f'Command "{ctx.command.qualified_name}" ran for {ctx.author.name} ({ctx.author.id})',
             level="info",
             data=crum_data,
         )
@@ -154,7 +167,7 @@ class SentryIO(commands.Cog):
         add_breadcrumb(
             type="user",
             category="on_command_completion",
-            message=f"Command \"{ctx.command.qualified_name}\" completed for {ctx.author.name} ({ctx.author.id})",
+            message=f'Command "{ctx.command.qualified_name}" completed for {ctx.author.name} ({ctx.author.id})',
             level="info",
             data=crum_data,
         )
@@ -166,13 +179,15 @@ class SentryIO(commands.Cog):
             "channel_id": interaction.channel_id,
             "guild_id": interaction.guild_id,
             "user_id": interaction.user.id,
-            "message_id": interaction.message.id if interaction.message is not None else None,
+            "message_id": interaction.message.id
+            if interaction.message is not None
+            else None,
         }
 
         add_breadcrumb(
             type="user",
             category="on_interaction",
-            message=f"Interaction \"{interaction.id}\" ran for {interaction.user.name} ({interaction.user.id})",
+            message=f'Interaction "{interaction.id}" ran for {interaction.user.name} ({interaction.user.id})',
             level="info",
             data=crum_data,
         )
