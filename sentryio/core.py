@@ -51,7 +51,7 @@ class SentryIO(commands.Cog):
         sentry_sdk.init(
             dsn,
             traces_sample_rate=1.0,
-            shutdown_timeout=0.1,
+            shutdown_timeout=0,
             integrations=[
                 AioHttpIntegration(),
                 LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
@@ -62,7 +62,7 @@ class SentryIO(commands.Cog):
         client = sentry_sdk.Hub.current.client
         if client is not None:
             log.info("Closing Sentry client")
-            client.close()
+            client.close(timeout=0)
 
     async def startup(self) -> None:
         self.init_sentry(await self._get_dsn())
