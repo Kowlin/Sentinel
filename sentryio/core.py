@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Mapping, Optional
 
@@ -21,7 +22,7 @@ class SentryIO(commands.Cog):
         self.bot = bot
 
     async def cog_load(self) -> None:
-        self.init_sentry(await self._get_dsn())
+        asyncio.create_task(self.startup())
 
     def cog_unload(self) -> None:
         self.close_sentry()
@@ -62,6 +63,9 @@ class SentryIO(commands.Cog):
         if client is not None:
             log.info("Closing Sentry client")
             client.close()
+
+    async def startup(self) -> None:
+        self.init_sentry(await self._get_dsn())
 
     @commands.group(name="sentryio")  # type: ignore
     @checks.is_owner()
