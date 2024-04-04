@@ -113,85 +113,71 @@ class SentryIO(commands.Cog):
             return
         self.init_sentry(await self._get_dsn(api_tokens))
 
+    def prepare_crumbs_commands(self, ctx: commands.Context) -> Mapping[str, str]:
+        crumb_data = {
+            "command_name": getattr(ctx.command, "qualified_name", "None"),
+            "cog_name": getattr(ctx.command.cog, "qualified_name", "None"),
+            "author_id": getattr(ctx.author, "id", "None"),
+            "guild_id": getattr(ctx.guild, "id", "None"),
+            "channel_id": getattr(ctx.channel, "id", "None"),
+        }
+        for comm_arg, value in ctx.kwargs.items():
+            crumb_data[f"command_arg_{comm_arg}"] = value
+        return crumb_data
+    
+    def prepare_crumbs_interactions(self, interaction: discord.Interaction) -> Mapping[str, str]:
+        crumb_data = {
+            "interaction_id": getattr(interaction, "id", "None"),
+            "channel_id": getattr(interaction.channel, "id", "None"),
+            "guild_id": getattr(interaction.guild, "id", "None"),
+            "user_id": getattr(interaction.user, "id", "None"),
+            "message_id": getattr(interaction.message, "id", "None"),
+        }
+        return crumb_data
+
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: commands.Context, error):
         if not ctx.command:
             return
 
-        crum_data = {
-            "command_name": ctx.command.qualified_name,
-            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
-            "author_id": ctx.author.id,
-            "guild_id": ctx.guild.id if ctx.guild else "None",
-            "channel_id": ctx.channel.id,
-        }
-        for comm_arg, value in ctx.kwargs.items():
-            crum_data[f"command_arg_{comm_arg}"] = value
-
+        crumb_data = self.prepare_crumbs_commands(ctx)
         add_breadcrumb(
             type="user",
             category="on_command_error",
             message=f'Command "{ctx.command.qualified_name}" failed for {ctx.author.name} ({ctx.author.id})',
             level="error",
-            data=crum_data,
+            data=crumb_data,
         )
 
     @commands.Cog.listener()
-    async def on_command(self, ctx):
-        crum_data = {
-            "command_name": ctx.command.qualified_name,
-            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
-            "author_id": ctx.author.id,
-            "guild_id": ctx.guild.id if ctx.guild else "None",
-            "channel_id": ctx.channel.id,
-        }
-        for comm_arg, value in ctx.kwargs.items():
-            crum_data[f"command_arg_{comm_arg}"] = value
-
+    async def on_command(self, ctx: commands.Context):
+        crumb_data = self.prepare_crumbs_commands(ctx)
         add_breadcrumb(
             type="user",
             category="on_command",
             message=f'Command "{ctx.command.qualified_name}" ran for {ctx.author.name} ({ctx.author.id})',
             level="info",
-            data=crum_data,
+            data=crumb_data,
         )
 
     @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
-        crum_data = {
-            "command_name": ctx.command.qualified_name,
-            "cog_name": ctx.command.cog.qualified_name if ctx.command.cog else "None",
-            "author_id": ctx.author.id,
-            "guild_id": ctx.guild.id if ctx.guild else "None",
-            "channel_id": ctx.channel.id,
-        }
-        for comm_arg, value in ctx.kwargs.items():
-            crum_data[f"command_arg_{comm_arg}"] = value
-
+    async def on_command_completion(self, ctx: commands.Context):
+        crumb_data = self.prepare_crumbs_commands(ctx)
         add_breadcrumb(
             type="user",
             category="on_command_completion",
             message=f'Command "{ctx.command.qualified_name}" completed for {ctx.author.name} ({ctx.author.id})',
             level="info",
-            data=crum_data,
+            data=crumb_data,
         )
 
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
-        crum_data = {
-            "interaction_id": interaction.id,
-            "channel_id": interaction.channel_id,
-            "guild_id": interaction.guild_id,
-            "user_id": interaction.user.id,
-            "message_id": interaction.message.id
-            if interaction.message is not None
-            else None,
-        }
-
+        crumb_data = self.prepare_crumbs_interactions(interaction)
         add_breadcrumb(
             type="user",
             category="on_interaction",
             message=f'Interaction "{interaction.id}" ran for {interaction.user.name} ({interaction.user.id})',
             level="info",
-            data=crum_data,
+            data=crumb_data,
         )
