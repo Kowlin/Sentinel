@@ -27,7 +27,9 @@ class RateLimit:
     We really should just use that lib already...
     """
 
-    def __init__(self, *, limit: int, remaining: int, reset: float, cost: Optional[int]) -> None:
+    def __init__(
+        self, *, limit: int, remaining: int, reset: float, cost: Optional[int]
+    ) -> None:
         self.limit = limit
         self.remaining = remaining
         self.reset = reset
@@ -47,7 +49,9 @@ class RateLimit:
             try:
                 limit = ratelimit_data["limit"]
                 remaining = ratelimit_data["remaining"]
-                reset = datetime.strptime(ratelimit_data["resetAt"], '%Y-%m-%dT%H:%M:%SZ')
+                reset = datetime.strptime(
+                    ratelimit_data["resetAt"], "%Y-%m-%dT%H:%M:%SZ"
+                )
             except KeyError:
                 return None
         else:
@@ -70,20 +74,24 @@ class GitHubAPI:
             "Authorization": f"bearer {token}",
             "Content-Type": "application/json",
             "Accept": "application/vnd.github+json",
-            "User-Agent": "Py aiohttp - GitHubCards (github.com/Kowlin/sentinel)"
+            "User-Agent": "Py aiohttp - GitHubCards (github.com/Kowlin/sentinel)",
         }
         self._token = token
         self.session = aiohttp.ClientSession(headers=headers)
 
     async def validate_user(self):
-        async with self.session.post(baseUrl, json={"query": Queries.validateUser}) as call:
+        async with self.session.post(
+            baseUrl, json={"query": Queries.validateUser}
+        ) as call:
             json = await call.json()
             if call.status == 401:
                 raise Unauthorized(json["message"])
             if "errors" in json.keys():
-                raise ApiError(json['errors'])
+                raise ApiError(json["errors"])
             self._log_ratelimit(
-                self.validate_user, call.headers, ratelimit_data=json['data']['rateLimit']
+                self.validate_user,
+                call.headers,
+                ratelimit_data=json["data"]["rateLimit"],
             )
             return json
 
@@ -99,47 +107,48 @@ class GitHubAPI:
             if call.status == 401:
                 raise Unauthorized(json["message"])
             if "errors" in json.keys():
-                raise ApiError(json['errors'])
+                raise ApiError(json["errors"])
             self._log_ratelimit(
-                self.validate_repo, call.headers, ratelimit_data=json['data']['rateLimit']
+                self.validate_repo,
+                call.headers,
+                ratelimit_data=json["data"]["rateLimit"],
             )
             return json
 
-    async def search_issues(self, repoOwner: str, repoName: str, searchParam: str, type: Optional[Literal[IssueType.ISSUE, IssueType.PULL_REQUEST]]):
+    async def search_issues(
+        self,
+        repoOwner: str,
+        repoName: str,
+        searchParam: str,
+        type: Optional[Literal[IssueType.ISSUE, IssueType.PULL_REQUEST]],
+    ):
         if type is IssueType.ISSUE:
             searchParam = f"{searchParam} is:issue"
         elif type is IssueType.PULL_REQUEST:
             searchParam = f"{searchParam} is:pr"
         query = f"repo:{repoOwner}/{repoName} {searchParam}"
         async with self.session.post(
-            baseUrl,
-            json={
-                "query": Queries.searchIssues,
-                "variables": {"query": query}
-            }
+            baseUrl, json={"query": Queries.searchIssues, "variables": {"query": query}}
         ) as call:
             json = await call.json()
             if "errors" in json.keys():
-                raise ApiError(json['errors'])
+                raise ApiError(json["errors"])
             self._log_ratelimit(
-                self.search_issues, call.headers, ratelimit_data=json['data']['rateLimit']
+                self.search_issues,
+                call.headers,
+                ratelimit_data=json["data"]["rateLimit"],
             )
-            search_results = json['data']['search']
+            search_results = json["data"]["search"]
 
             data = SearchData(
-                total=search_results['issueCount'],
-                results=search_results['nodes'],
-                query=query
+                total=search_results["issueCount"],
+                results=search_results["nodes"],
+                query=query,
             )
             return data
 
     async def send_query(self, query: str):
-        async with self.session.post(
-            baseUrl,
-            json={
-                "query": query
-            }
-        ) as call:
+        async with self.session.post(baseUrl, json={"query": query}) as call:
             json = await call.json()
             if call.status == 401:
                 raise Unauthorized(json["message"])

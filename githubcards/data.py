@@ -43,9 +43,9 @@ class IssueData(object):
 
 @dataclass(init=True)
 class IssueStateColour(object):
-    OPEN: int = 0x6cc644
-    CLOSED: int = 0xbd2c00
-    MERGED: int = 0x6e5494
+    OPEN: int = 0x6CC644
+    CLOSED: int = 0xBD2C00
+    MERGED: int = 0x6E5494
 
 
 class IssueType(Enum):
