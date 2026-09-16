@@ -59,7 +59,7 @@ class SentryIO(commands.Cog):
         )
 
     def close_sentry(self) -> None:
-        client = sentry_sdk.Hub.current.client
+        client = sentry_sdk.get_client()
         if client is not None:
             log.info("Closing Sentry client")
             client.close(timeout=0)
@@ -75,7 +75,7 @@ class SentryIO(commands.Cog):
     @sentry_group.command(name="status")
     async def status(self, ctx):
         """Check the status of Sentry.IO integration."""
-        client = sentry_sdk.Hub.current.client
+        client = sentry_sdk.get_client()
         if client is None:
             await ctx.send("Sentry.IO is not initialized.")
             return
